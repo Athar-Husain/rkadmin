@@ -1,0 +1,58 @@
+import axios from 'axios';
+import { TokenManager } from '../Admin/adminService';
+
+// ===============================
+// Configuration
+// ===============================
+const BASE_API_URL = import.meta.env.VITE_BACKEND_URL;
+const COUPON_URL = `${BASE_API_URL}/api/coupons`;
+
+// ===============================
+// Axios Instance
+// ===============================
+const axiosInstance = axios.create({
+  baseURL: COUPON_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = TokenManager.getToken();
+    if (token && TokenManager.isValid()) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ===============================
+// CouponService Methods
+// ===============================
+const CouponService = {
+  // ----------------
+  // Admin
+  // ----------------
+  createCoupon: (data) => axiosInstance.post('/createCoupon', data).then((res) => res.data),
+  getAllCouponsAdmin: () => axiosInstance.get('/getAllCoupons').then((res) => res.data),
+  updateCoupon: (id, data) => axiosInstance.patch(`/updateCoupon/${id}`, data).then((res) => res.data),
+  getCouponAnalytics: () => axiosInstance.get('/getAnalytics').then((res) => res.data),
+  getRedemptionHistory: (id, params) => axiosInstance.get(`/getRedemptionHistory/${id}/redemptions`, { params }).then((res) => res.data),
+
+  // ----------------
+  // User
+  // ----------------
+  getMyCoupons: (params) => axiosInstance.get('/getMyCoupons', { params }).then((res) => res.data),
+  getCouponById: (id) => axiosInstance.get(`/getCouponById/${id}`).then((res) => res.data),
+  claimCoupon: (id) => axiosInstance.post(`/claimCoupon/${id}/claim`).then((res) => res.data),
+
+  // ----------------
+  // Store Staff
+  // ----------------
+  validateCoupon: (data) => axiosInstance.post('/validate', data).then((res) => res.data),
+  redeemCoupon: (data) => axiosInstance.post('/redeem', data).then((res) => res.data)
+};
+
+export default CouponService;

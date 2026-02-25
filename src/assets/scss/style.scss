@@ -1,0 +1,57 @@
+// @import 'themes-vars.module.scss';
+// @import 'plugins/plugins';
+
+@use 'themes-vars.module' as *;
+@use 'plugins/plugins' as *;
+
+@import 'react-toastify/dist/ReactToastify.css';
+
+/* breadcrumb */
+.icon-breadcrumb {
+  margin-right: 5px;
+}
+
+.link-breadcrumb {
+  font-size: 0.75rem;
+  display: flex;
+  text-decoration: none;
+}
+
+/* card */
+
+.card-header {
+  font-weight: 600 !important;
+  font-size: 15px;
+}
+
+.apexcharts-legend-marker {
+  margin-right: 8px !important;
+}
+
+.f-right {
+  float: right;
+}
+.p-0 {
+  padding: 0 !important;
+}
+.p-20 {
+  padding: 20px !important;
+}
+
+.apexcharts-legend-text {
+  padding-right: 4px;
+}
+
+.css-7blk3r-MuiButtonBase-root-MuiButton-root {
+  color: $textDarkDark !important;
+}
+
+.boxshadowprimary {
+  box-shadow: -3px 10px 25px -3px rgba(83, 185, 213, 0.75);
+  -webkit-box-shadow: -3px 10px 25px -3px rgba(83, 185, 213, 0.75);
+  -moz-box-shadow: -3px 10px 25px -3px rgba(83, 185, 213, 0.75);
+}
+
+.dropshadow {
+  filter: drop-shadow(1px 2px 4px rgb(51, 102, 255));
+}
