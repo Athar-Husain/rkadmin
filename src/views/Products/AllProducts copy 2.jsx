@@ -9,326 +9,353 @@ import {
   useTheme,
   Chip,
   Tooltip,
-  CircularProgress,
-  Alert,
   Container,
   TextField,
   MenuItem,
-  IconButton
+  IconButton,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, GridToolbarContainer, GridToolbarExport } from '@mui/x-data-grid';
 import {
-  Inventory2Rounded as ProductIcon,
-  StarRounded as FeaturedIcon,
-  LocalFireDepartmentRounded as BestsellerIcon,
-  NewReleasesRounded as NewIcon,
-  InventoryRounded as StockIcon,
-  EditRounded as EditIcon,
-  DeleteRounded as DeleteIcon,
-  AddRounded as AddIcon
+  Inventory2TwoTone as ProductIcon,
+  AutoAwesomeTwoTone as FeaturedIcon,
+  LayersTwoTone as StockIcon,
+  EditTwoTone as EditIcon,
+  DeleteTwoTone as DeleteIcon,
+  AddRounded as AddIcon,
+  SearchRounded as SearchIcon,
+  FilterAltTwoTone as FilterIcon,
+  RestartAltRounded as ResetIcon,
+  ImageNotSupportedTwoTone as NoImageIcon,
+  WarningAmberRounded as WarningIcon
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts, deleteProduct } from '../../redux/productSlice';
-import ProductModal from '../../components/products/ProductModal';
+import {
+  fetchProducts,
+  fetchCategoriesList
+  // deleteProduct
+} from '../../redux/features/Products/ProductSlice'; // Ensure deleteProduct is imported
+import ProductModal from './ProductModal';
+
+const CustomToolbar = () => (
+  <GridToolbarContainer sx={{ p: 2, justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0' }}>
+    <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
+      PRODUCT INVENTORY
+    </Typography>
+    <GridToolbarExport sx={{ borderRadius: '8px', fontWeight: 700 }} />
+  </GridToolbarContainer>
+);
 
 const AllProducts = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
 
-  const { products = [], isProductLoading, isProductError, message } = useSelector((state) => state.product);
+  const { products = [], categoriesList = [], isProductLoading } = useSelector((state) => state.product);
+
+  console.log('products', products);
 
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  // Delete Dialog State
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+
   useEffect(() => {
-    dispatch(fetchProducts({ category, search }));
+    dispatch(fetchCategoriesList());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      dispatch(fetchProducts({ category, search }));
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
   }, [dispatch, category, search]);
 
-  // ===============================
-  // Data Transformation
-  // ===============================
-  const rows = useMemo(
-    () =>
-      products.map((p, index) => {
-        const stock = Number(p.overallStock) || 0;
-        return {
-          id: p._id,
-          sl: index + 1,
-          name: p.name || 'Unnamed Product',
-          brand: p.brand || '—',
-          category: p.category || '—',
-          price: Number(p.sellingPrice) || 0,
-          discount: Number(p.discountPercentage) || 0,
-          stock,
-          isFeatured: Boolean(p.isFeatured),
-          isBestSeller: Boolean(p.isBestSeller),
-          isNewArrival: Boolean(p.isNewArrival),
-          status: stock > 0 ? 'In Stock' : 'Out of Stock'
-        };
-      }),
-    [products]
-  );
-
-  // ===============================
-  // KPI Calculations
-  // ===============================
-  const totalProducts = rows.length;
-  const featuredProducts = rows.filter((r) => r.isFeatured).length;
-  const outOfStock = rows.filter((r) => r.stock === 0).length;
-
-  // ===============================
-  // Handlers
-  // ===============================
-  const handleAddProduct = () => {
-    setSelectedProduct(null);
-    setShowModal(true);
+  const handleResetFilters = () => {
+    setCategory('');
+    setSearch('');
   };
 
-  const handleEditProduct = (product) => {
-    setSelectedProduct(product);
-    setShowModal(true);
+  const handleDeleteClick = (product) => {
+    setProductToDelete(product);
+    setDeleteDialogOpen(true);
   };
 
-  const handleDeleteProduct = (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      dispatch(deleteProduct(id));
+  const handleConfirmDelete = () => {
+    if (productToDelete) {
+      // dispatch(deleteProduct(productToDelete._id));
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
     }
   };
 
-  // ===============================
-  // Columns
-  // ===============================
+  const rows = useMemo(
+    () =>
+      products.map((p, index) => ({
+        ...p,
+        id: p._id,
+        sl: index + 1,
+        stock: p.overallStock ?? 0,
+        displayImage: p.images?.[0] || ''
+      })),
+    [products]
+  );
+
+  const stats = useMemo(
+    () => ({
+      total: rows.length,
+      featured: rows.filter((r) => r.isFeatured).length,
+      lowStock: rows.filter((r) => r.stock < 5 && r.stock > 0).length
+    }),
+    [rows]
+  );
+
   const columns = [
-    { field: 'sl', headerName: 'SL', width: 60, align: 'center', headerAlign: 'center' },
+    { field: 'sl', headerName: '#', width: 60, align: 'center' },
     {
-      field: 'name',
-      headerName: 'PRODUCT',
-      flex: 1.6,
-      renderCell: (params) => {
-        const name = params.value || 'Unnamed';
-        return (
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar
-              sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                color: theme.palette.primary.main,
-                fontWeight: 700
-              }}
-            >
-              {name.charAt(0).toUpperCase()}
-            </Avatar>
-            <Box>
-              <Typography fontWeight={700} color="#1B2559">
-                {name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {params.row.brand}
-              </Typography>
-            </Box>
-          </Stack>
-        );
-      }
-    },
-    { field: 'category', headerName: 'CATEGORY', flex: 1, valueFormatter: ({ value }) => value || '—' },
-    {
-      field: 'price',
-      headerName: 'PRICE',
-      flex: 0.8,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params) => (params.value > 0 ? `₹${params.value.toLocaleString('en-IN')}` : '—')
-    },
-    {
-      field: 'discount',
-      headerName: 'DISCOUNT',
-      flex: 0.7,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params) => (params.value > 0 ? `${params.value}%` : '—')
-    },
-    {
-      field: 'stock',
-      headerName: 'STOCK',
-      flex: 0.6,
-      align: 'center',
-      headerAlign: 'center',
+      field: 'displayImage',
+      headerName: 'Img',
+      width: 80,
+      sortable: false,
       renderCell: (params) => (
-        <Chip
-          icon={<StockIcon />}
-          label={params.value}
-          size="small"
-          color={params.value > 0 ? 'success' : 'error'}
-          sx={{ fontWeight: 700 }}
-        />
+        <Avatar
+          src={params.value.images} // params.value is now the string URL from 'displayImage'
+          variant="rounded"
+          sx={{
+            width: 48,
+            height: 48,
+            bgcolor: '#f1f5f9',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            mt: 1 // Center slightly in the large rowHeight
+          }}
+        >
+          {/* Fallback if URL is broken or missing */}
+          <NoImageIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
+        </Avatar>
       )
     },
     {
-      field: 'status',
-      headerName: 'STATUS',
-      flex: 0.8,
-      align: 'center',
-      headerAlign: 'center',
+      field: 'name',
+      headerName: 'Product Details',
+      flex: 2,
+      renderCell: (params) => (
+        <Box sx={{ py: 1.5 }}>
+          <Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#1E293B', lineHeight: 1.2 }}>
+            {params.value}
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="caption" sx={{ color: theme.palette.primary.main, fontWeight: 600 }}>
+              {params.row.sku}
+            </Typography>
+            <Typography variant="caption" color="text.disabled">
+              |
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {params.row.brand}
+            </Typography>
+          </Stack>
+        </Box>
+      )
+    },
+    {
+      field: 'price',
+      headerName: 'Pricing',
+      width: 140,
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="body2" fontWeight={800} color="success.main">
+            ₹{params.row.sellingPrice?.toLocaleString('en-IN')}
+          </Typography>
+          {params.row.mrp > params.row.sellingPrice && (
+            <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
+              ₹{params.row.mrp?.toLocaleString('en-IN')}
+            </Typography>
+          )}
+        </Box>
+      )
+    },
+    {
+      field: 'stock',
+      headerName: 'Inventory',
+      width: 150,
       renderCell: (params) => {
-        const isInStock = params.value === 'In Stock';
+        const isOut = params.value === 0;
+        const isLow = params.value < 5 && !isOut;
         return (
           <Chip
-            label={params.value}
+            label={isOut ? 'Sold Out' : isLow ? `Low: ${params.value}` : `${params.value} Units`}
             size="small"
-            sx={{
-              bgcolor: alpha(isInStock ? '#01B574' : '#FF4D4F', 0.1),
-              color: isInStock ? '#01B574' : '#FF4D4F',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              fontSize: '11px'
-            }}
+            color={isOut ? 'error' : isLow ? 'warning' : 'success'}
+            sx={{ fontWeight: 800, borderRadius: '6px', minWidth: '90px' }}
           />
         );
       }
     },
     {
-      field: 'badges',
-      headerName: 'TAGS',
-      flex: 1,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={1}>
-          {params.row.isFeatured && (
-            <Tooltip title="Featured Product">
-              <FeaturedIcon color="warning" fontSize="small" />
-            </Tooltip>
-          )}
-          {params.row.isBestSeller && (
-            <Tooltip title="Best Seller">
-              <BestsellerIcon color="error" fontSize="small" />
-            </Tooltip>
-          )}
-          {params.row.isNewArrival && (
-            <Tooltip title="New Arrival">
-              <NewIcon color="success" fontSize="small" />
-            </Tooltip>
-          )}
-        </Stack>
-      )
-    },
-    {
       field: 'actions',
-      headerName: 'ACTIONS',
-      flex: 0.7,
-      align: 'center',
-      headerAlign: 'center',
+      headerName: 'Actions',
+      width: 100,
       sortable: false,
       renderCell: (params) => (
-        <Stack direction="row" spacing={1} justifyContent="center">
-          <IconButton color="primary" size="small" onClick={() => handleEditProduct(params.row)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton color="error" size="small" onClick={() => handleDeleteProduct(params.row.id)}>
-            <DeleteIcon />
-          </IconButton>
+        <Stack direction="row" spacing={0.5}>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              onClick={() => {
+                setSelectedProduct(params.row);
+                setShowModal(true);
+              }}
+            >
+              <EditIcon fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete">
+            <IconButton size="small" onClick={() => handleDeleteClick(params.row)}>
+              <DeleteIcon fontSize="small" sx={{ color: 'error.light' }} />
+            </IconButton>
+          </Tooltip>
         </Stack>
       )
     }
   ];
 
-  // ===============================
-  // KPI Card Component
-  // ===============================
-  const KPICard = ({ title, value, icon, color }) => (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 3,
-        borderRadius: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        border: '1px solid #F4F7FE'
-      }}
-    >
-      <Avatar sx={{ bgcolor: alpha(color, 0.1), color, mr: 2 }}>{icon}</Avatar>
-      <Box>
-        <Typography variant="caption" fontWeight={700}>
-          {title}
-        </Typography>
-        <Typography variant="h5" fontWeight={800}>
-          {value}
-        </Typography>
-      </Box>
-    </Paper>
-  );
-
   return (
-    <Box sx={{ bgcolor: '#F4F7FE', minHeight: '100vh', py: 3 }}>
+    <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', pb: 8 }}>
       <Container maxWidth="xl">
-        <Stack spacing={4}>
-          {/* Header */}
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Typography variant="h4" fontWeight={800}>
-                Product Management
-              </Typography>
-              <Typography color="text.secondary">Monitor and manage your catalog</Typography>
-            </Box>
-            <IconButton color="primary" onClick={handleAddProduct}>
-              <AddIcon />
-            </IconButton>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 4 }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900} sx={{ color: '#1E293B', letterSpacing: '-0.5px' }}>
+              Catalog Manager
+            </Typography>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+              Control your products, inventory levels, and visibility.
+            </Typography>
           </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setSelectedProduct(null);
+              setShowModal(true);
+            }}
+            sx={{ borderRadius: '12px', px: 4, py: 1.2, fontWeight: 700, textTransform: 'none', boxShadow: 3 }}
+          >
+            Create Product
+          </Button>
+        </Stack>
 
-          {/* Filters */}
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
+          <KPICard title="Total Products" value={stats.total} icon={<ProductIcon />} color={theme.palette.primary.main} />
+          <KPICard title="Featured Items" value={stats.featured} icon={<FeaturedIcon />} color="#ed6c02" />
+          <KPICard title="Low Stock" value={stats.lowStock} icon={<StockIcon />} color="#d32f2f" />
+        </Stack>
+
+        <Paper sx={{ p: 2, mb: 3, borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: 'none' }}>
           <Stack direction="row" spacing={2}>
-            <TextField size="small" placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <TextField
+              placeholder="Search products..."
+              fullWidth
+              size="small"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.disabled' }} />,
+                sx: { borderRadius: '10px', bgcolor: '#fff' }
+              }}
+            />
             <TextField
               select
               size="small"
               label="Category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              sx={{ minWidth: 200 }}
+              sx={{ minWidth: 200, '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#fff' } }}
             >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="mobile">Mobile</MenuItem>
-              <MenuItem value="laptop">Laptop</MenuItem>
-              <MenuItem value="accessories">Accessories</MenuItem>
+              <MenuItem value="">All Categories</MenuItem>
+              {categoriesList.map((item) => (
+                <MenuItem key={item.category} value={item.category}>
+                  {item.category.toUpperCase()}
+                </MenuItem>
+              ))}
             </TextField>
+            <IconButton onClick={handleResetFilters} sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: '10px' }}>
+              <ResetIcon color="primary" />
+            </IconButton>
           </Stack>
+        </Paper>
 
-          {/* KPI Cards */}
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-            <KPICard title="Total Products" value={totalProducts} icon={<ProductIcon />} color="#4318FF" />
-            <KPICard title="Featured" value={featuredProducts} icon={<FeaturedIcon />} color="#FFB547" />
-            <KPICard title="Out of Stock" value={outOfStock} icon={<StockIcon />} color="#FF4D4F" />
-          </Stack>
-
-          {/* DataGrid Table */}
-          <Paper sx={{ borderRadius: '20px', p: 2 }}>
-            {isProductLoading ? (
-              <Box textAlign="center" p={6}>
-                <CircularProgress />
-              </Box>
-            ) : isProductError ? (
-              <Alert severity="error">{message}</Alert>
-            ) : (
-              <DataGrid
-                rows={rows}
-                columns={columns}
-                pageSizeOptions={[10, 25, 50]}
-                rowHeight={72}
-                disableRowSelectionOnClick
-                sx={{
-                  border: 'none',
-                  '& .MuiDataGrid-columnHeaders': { borderBottom: '1px solid #F4F7FE' }
-                }}
-              />
-            )}
-          </Paper>
-        </Stack>
+        <Paper sx={{ borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            loading={isProductLoading}
+            autoHeight
+            rowHeight={70}
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25]}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            slots={{ toolbar: CustomToolbar }}
+            sx={{ border: 'none', '& .MuiDataGrid-columnHeaders': { bgcolor: '#F8FAFC' } }}
+          />
+        </Paper>
       </Container>
 
-      {/* Product Modal */}
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: '400px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontWeight: 800 }}>
+          <WarningIcon sx={{ color: 'error.main' }} />
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to delete <strong>{productToDelete?.name}</strong>? This action cannot be undone and will remove the
+            product from the store immediately.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ fontWeight: 700, color: 'text.secondary' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="error"
+            sx={{ borderRadius: '10px', fontWeight: 700, textTransform: 'none' }}
+          >
+            Delete Product
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {showModal && <ProductModal product={selectedProduct} onClose={() => setShowModal(false)} />}
     </Box>
   );
 };
+
+const KPICard = ({ title, value, icon, color }) => (
+  <Paper sx={{ p: 2.5, flex: 1, borderRadius: '20px', display: 'flex', alignItems: 'center', border: '1px solid #E2E8F0' }}>
+    <Avatar sx={{ bgcolor: alpha(color, 0.1), color, width: 52, height: 52, mr: 2 }}>{icon}</Avatar>
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ textTransform: 'uppercase' }}>
+        {title}
+      </Typography>
+      <Typography variant="h4" fontWeight={900}>
+        {value}
+      </Typography>
+    </Box>
+  </Paper>
+);
 
 export default AllProducts;

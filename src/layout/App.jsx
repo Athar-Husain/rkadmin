@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { useDispatch, useSelector } from 'react-redux';
-import { getAdminLoginStatus, getAdmin, AdminLogout } from '../redux/features/Admin/adminSlice';
+import { getAdminLoginStatus, getAdminProfile, logoutAdmin } from '../redux/features/Admin/adminSlice';
 import { ToastContainer } from 'react-toastify';
 import theme from '../themes';
 import Routes from '../routes/index';
@@ -25,7 +25,7 @@ const App = () => {
 
       if (!isValidToken) {
         console.warn('No valid token. Skipping session check.');
-        dispatch(AdminLogout());
+        dispatch(logoutAdmin());
         return;
       }
 
@@ -34,11 +34,11 @@ const App = () => {
         console.log('Login status:', status);
 
         if (status && !Admin) {
-          await dispatch(getAdmin()).unwrap();
+          await dispatch(getAdminProfile()).unwrap();
         }
       } catch (error) {
         console.error('Session check failed:', error);
-        dispatch(AdminLogout());
+        dispatch(logoutAdmin());
       }
     };
 

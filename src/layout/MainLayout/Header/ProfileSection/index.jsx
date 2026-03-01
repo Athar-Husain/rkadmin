@@ -1,16 +1,6 @@
 import React from 'react';
 import { useTheme } from '@mui/material/styles';
-import {
-  Fade,
-  Button,
-  ClickAwayListener,
-  Paper,
-  Popper,
-  List,
-  ListItemText,
-  ListItemIcon,
-  ListItemButton
-} from '@mui/material';
+import { Fade, Button, ClickAwayListener, Paper, Popper, List, ListItemText, ListItemIcon, ListItemButton } from '@mui/material';
 import {
   PersonTwoTone as ProfileIcon,
   DraftsTwoTone as MessagesIcon,
@@ -22,8 +12,7 @@ import {
 
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-// import { AdminLogout } from '../redux/features/Admin/adminSlice';
-import { AdminLogout } from '../../../../redux/features/Admin/adminSlice';
+import { logoutAdmin } from '../../../../redux/features/Admin/adminSlice';
 
 const ProfileSection = () => {
   const theme = useTheme();
@@ -46,7 +35,7 @@ const ProfileSection = () => {
   const handleLogout = () => {
     setOpen(false);
 
-    dispatch(AdminLogout());
+    dispatch(logoutAdmin());
     // TODO: Clear auth tokens, user context, etc.
     navigate('/login');
   };

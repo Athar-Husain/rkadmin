@@ -1,220 +1,284 @@
-// src/pages/Default.jsx
 import React from 'react';
-import { Box, Typography, Paper, Grid, Card, CardContent, Divider, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  Stack,
+  Avatar,
+  Chip,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Paper,
+  useTheme,
+  alpha,
+  Button,
+  Divider,
+  IconButton
+} from '@mui/material';
+import { useSelector } from 'react-redux';
 import ApexCharts from 'react-apexcharts';
-import DashboardIcon from '@mui/icons-material/Dashboard'; // Using MUI icons
-import GroupIcon from '@mui/icons-material/Group';
-import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import LeaderboardIcon from '@mui/icons-material/Leaderboard';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 
-// Mock Data for Dashboard
-const mockDashboardData = {
-  totalCustomers: 1250,
-  activeConnections: 980,
-  openTickets: 45,
-  newLeadsToday: 12,
-  monthlyRevenue: 75000,
-  leadsConvertedThisMonth: 88,
-  ticketResolutionRate: '92%',
-  leadSources: {
-    labels: ['Website', 'Referral', 'Social Media', 'Partnership'],
-    series: [44, 55, 13, 43],
-  },
-  ticketStatusDistribution: {
-    labels: ['Open', 'In Progress', 'Pending', 'Resolved'],
-    series: [20, 30, 15, 35],
-  },
-  recentActivity: [
-    { id: 'act1', icon: <GroupIcon color="primary" />, text: 'New customer "Alice Smith" registered.', timestamp: 'Just now' },
-    { id: 'act2', icon: <AssignmentIcon color="warning" />, text: 'Ticket #T123 status updated to "In Progress".', timestamp: '5 mins ago' },
-    { id: 'act3', icon: <LeaderboardIcon color="success" />, text: 'New lead "Global Innovations" received.', timestamp: '1 hour ago' },
-    { id: 'act4', icon: <NetworkCheckIcon color="secondary" />, text: 'Connection outage in "Sector B".', timestamp: '2 hours ago' },
-    { id: 'act5', icon: <AttachMoneyIcon color="info" />, text: 'Invoice #INV456 paid by "John Doe".', timestamp: 'Yesterday' },
-  ],
-};
+// Icons
+import {
+  PeopleAltTwoTone as PeopleIcon,
+  RouterTwoTone as RouterIcon,
+  AccountBalanceWalletTwoTone as WalletIcon,
+  ConfirmationNumberTwoTone as TicketIcon,
+  MapTwoTone as MapIcon,
+  TrendingUp as TrendingIcon,
+  ErrorOutlineTwoTone as ErrorIcon,
+  ShoppingBagTwoTone as PurchaseIcon,
+  FlashOnTwoTone as SystemIcon,
+  ArrowForwardRounded as ArrowIcon,
+  GroupWorkTwoTone as TeamIcon,
+  InventoryTwoTone as PlanIcon,
+  ShareTwoTone as ReferralIcon,
+  MoreVertRounded as MoreIcon
+} from '@mui/icons-material';
 
-const Default = () => {
+// --- Secondary Mini KPI Component ---
+const MiniResourceCard = ({ title, value, icon, color }) => (
+  <Paper
+    elevation={0}
+    sx={{
+      p: 2,
+      borderRadius: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      bgcolor: '#fff',
+      border: '1px solid #E9EDF7',
+      '&:hover': { boxShadow: '0 10px 20px rgba(0,0,0,0.05)', transform: 'translateY(-2px)' },
+      transition: 'all 0.3s ease'
+    }}
+  >
+    <Avatar sx={{ bgcolor: alpha(color, 0.1), color: color, width: 42, height: 42, borderRadius: '10px' }}>
+      {React.cloneElement(icon, { sx: { fontSize: 22 } })}
+    </Avatar>
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={700}>
+        {title}
+      </Typography>
+      <Typography variant="h6" fontWeight={800} color="#1B2559">
+        {value}
+      </Typography>
+    </Box>
+  </Paper>
+);
+
+const Dashboard = () => {
   const theme = useTheme();
+  const { stats, isLoading } = useSelector((state) => state.Dashboard || {});
+  const { Admin } = useSelector((state) => state.admin || {});
 
-  // ApexCharts options for Lead Sources (Donut Chart)
-  const leadSourcesChartOptions = {
-    chart: {
-      type: 'donut',
-    },
-    labels: mockDashboardData.leadSources.labels,
-    colors: [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.info.main, theme.palette.success.main],
-    responsive: [{
-      breakpoint: 480,
-      options: {
-        chart: {
-          width: 200,
-        },
-        legend: {
-          position: 'bottom',
-        },
-      },
-    }],
-    legend: {
-      labels: {
-        colors: theme.palette.text.primary, // Ensure legend text color adapts to theme
-      },
-    },
+  // Combined Data Object
+  const data = stats || {
+    totalCustomers: '1,280',
+    revenue: '₹75,000',
+    activeNodes: '980',
+    pendingTickets: '12',
+    totalTeam: '18',
+    activePlans: '08',
+    referrals: '142',
+    totalAreas: '24',
+    outages: ['Fire Station', 'Durgamma Gudi'],
+    recentPurchases: [
+      { id: 1, user: 'Amit Sharma', plan: 'Gold Unlimited', time: '2m ago' },
+      { id: 2, user: 'Sneha Rao', plan: 'Fiber Pro', time: '15m ago' },
+      { id: 3, user: 'John Doe', plan: 'Enterprise 1GB', time: '1h ago' }
+    ]
   };
 
-  // ApexCharts options for Ticket Status Distribution (Pie Chart)
-  const ticketStatusChartOptions = {
-    chart: {
-      type: 'pie',
-    },
-    labels: mockDashboardData.ticketStatusDistribution.labels,
-    colors: [theme.palette.error.main, theme.palette.info.main, theme.palette.warning.main, theme.palette.success.main],
-    responsive: [{
-      breakpoint: 480,
-      options: {
-        chart: {
-          width: 200,
-        },
-        legend: {
-          position: 'bottom',
-        },
-      },
-    }],
-    legend: {
-      labels: {
-        colors: theme.palette.text.primary, // Ensure legend text color adapts to theme
-      },
-    },
+  const chartOptions = {
+    chart: { toolbar: { show: false }, sparkline: { enabled: false } },
+    colors: ['#4318FF'],
+    stroke: { curve: 'smooth', width: 3 },
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05 } },
+    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'], axisBorder: { show: false } },
+    yaxis: { labels: { show: false } },
+    grid: { borderColor: alpha(theme.palette.divider, 0.1), strokeDashArray: 4 }
   };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, lg: 4 } }}>
-      <Typography variant="h4" component="h1" sx={{ mb: 6, fontWeight: 'bold', color: 'text.primary' }}>
-        Dashboard Overview
-      </Typography>
+    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F4F7FE', minHeight: '100vh' }}>
+      {/* 1. Header Area */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+        <Box>
+          <Typography variant="h4" fontWeight={900} color="#1B2559">
+            Command Center
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Systems overview for <b>{Admin?.firstName || 'Admin'}</b>
+          </Typography>
+        </Box>
+        <Chip
+          label={data.outages.length > 0 ? 'System Alert' : 'System Healthy'}
+          onDelete={() => {}}
+          deleteIcon={
+            <Box
+              className={data.outages.length > 0 ? 'pulse-red' : 'pulse-green'}
+              sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: data.outages.length > 0 ? '#EE5D50' : '#05CD99' }}
+            />
+          }
+          sx={{ bgcolor: '#fff', fontWeight: 700, p: 1, borderRadius: '10px', border: '1px solid #E9EDF7' }}
+        />
+      </Stack>
 
-      {/* Overview Cards */}
-      <Grid container spacing={4} sx={{ mb: 8 }}>
+      {/* 2. Tier 1: Primary KPIs */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         {[
-          { title: 'Total Customers', value: mockDashboardData.totalCustomers, icon: <GroupIcon />, color: 'primary' },
-          { title: 'Active Connections', value: mockDashboardData.activeConnections, icon: <NetworkCheckIcon />, color: 'success' },
-          { title: 'Open Tickets', value: mockDashboardData.openTickets, icon: <AssignmentIcon />, color: 'error' },
-          { title: 'New Leads Today', value: mockDashboardData.newLeadsToday, icon: <LeaderboardIcon />, color: 'info' },
-//           {
-//             title: 'Monthly Revenue', value: `₹
-// ${mockDashboardData.monthlyRevenue.toLocaleString()}`, icon: <AttachMoneyIcon />, color: 'secondary'
-//           },
-          {
-            title: 'Monthly Revenue', value: `₹
-${mockDashboardData.monthlyRevenue.toLocaleString()}`, icon: <AttachMoneyIcon />, color: 'secondary'
-          },
-          { title: 'Leads Converted', value: mockDashboardData.leadsConvertedThisMonth, icon: <PeopleOutlineIcon />, color: 'success' },
-          { title: 'Ticket Resolution', value: mockDashboardData.ticketResolutionRate, icon: <CheckCircleOutlineIcon />, color: 'primary' },
-        ].map((item, index) => (
-          <Grid key={index} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                boxShadow: 3,
-                height: '100%',
-                transition: 'box-shadow 0.3s',
-                '&:hover': { boxShadow: 6 },
-                bgcolor: 'background.paper',
-              }}
-            >
-              <CardContent
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  p: 3,
-                }}
-              >
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: '50%',
-                    mb: 2,
-                    boxShadow: 3,
-                    bgcolor: theme.palette[item.color].light,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  {React.cloneElement(item.icon, { sx: { color: theme.palette[item.color].dark, fontSize: 30 } })}
+          { title: 'Revenue', value: data.revenue, icon: <WalletIcon />, color: '#4318FF', trend: 8.2 },
+          { title: 'Total Customers', value: data.totalCustomers, icon: <PeopleIcon />, color: '#6AD2FF', trend: 12 },
+          { title: 'Active Nodes', value: data.activeNodes, icon: <RouterIcon />, color: '#05CD99', trend: 2.4 },
+          { title: 'Operational Areas', value: data.totalAreas, icon: <MapIcon />, color: '#FFB547', trend: 0 }
+        ].map((kpi, i) => (
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+            <Card sx={{ p: 2.5, borderRadius: '20px', border: '1px solid #F1F4F9', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)' }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: '#F4F7FE', color: kpi.color, width: 56, height: 56, borderRadius: '15px' }}>{kpi.icon}</Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                    {kpi.title}
+                  </Typography>
+                  <Typography variant="h5" fontWeight={800} color="#1B2559">
+                    {kpi.value}
+                  </Typography>
                 </Box>
-                <Typography variant="h5" component="div" sx={{ fontWeight: 'bold', mb: 1, color: 'text.primary' }}>
-                  {item.value}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" align="center">
-                  {item.title}
-                </Typography>
-              </CardContent>
+              </Stack>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      {/* Charts Section */}
-      <Grid container spacing={4} sx={{ mt: 8, mb: 8 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ borderRadius: 3, boxShadow: 3, p: 4, height: '100%', bgcolor: 'background.paper' }}>
-            <Typography variant="h6" component="h2" sx={{ mb: 4, fontWeight: 'semibold', color: 'text.primary' }}>
-              Lead Sources
+      {/* 3. Tier 2: Secondary Resource Metrics (The missing cards) */}
+      <Typography variant="subtitle1" fontWeight={800} color="#1B2559" sx={{ mb: 2, ml: 1 }}>
+        Resource Overview
+      </Typography>
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <MiniResourceCard title="Team Members" value={data.totalTeam} icon={<TeamIcon />} color="#4318FF" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <MiniResourceCard title="Active Plans" value={data.activePlans} icon={<PlanIcon />} color="#05CD99" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <MiniResourceCard title="Referrals" value={data.referrals} icon={<ReferralIcon />} color="#6AD2FF" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <MiniResourceCard title="Support Tickets" value={data.pendingTickets} icon={<TicketIcon />} color="#EE5D50" />
+        </Grid>
+      </Grid>
+
+      {/* 4. Tier 3: Charts & Feeds */}
+      <Grid container spacing={3}>
+        {/* Revenue Chart */}
+        <Grid size={{ xs: 12, lg: 8 }}>
+          <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 3 }}>
+              Revenue Growth Trend
             </Typography>
             <ApexCharts
-              options={leadSourcesChartOptions}
-              series={mockDashboardData.leadSources.series}
-              type="donut"
-              height={300}
+              options={chartOptions}
+              series={[{ name: 'Revenue', data: [31, 40, 28, 51, 42, 109, 100] }]}
+              type="area"
+              height={320}
             />
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ borderRadius: 3, boxShadow: 3, p: 4, height: '100%', bgcolor: 'background.paper' }}>
-            <Typography variant="h6" component="h2" sx={{ mb: 4, fontWeight: 'semibold', color: 'text.primary' }}>
-              Ticket Status Distribution
+
+        {/* Network Alerts */}
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Paper sx={{ p: 3, borderRadius: '24px', height: '100%' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ErrorIcon color="error" /> Outage Monitor
             </Typography>
-            <ApexCharts
-              options={ticketStatusChartOptions}
-              series={mockDashboardData.ticketStatusDistribution.series}
-              type="pie"
-              height={300}
-            />
+            <Divider sx={{ mb: 2 }} />
+            <Stack spacing={2}>
+              {data.outages.length > 0 ? (
+                data.outages.map((outage, i) => (
+                  <Box key={i} sx={{ p: 2, bgcolor: '#FFF5F5', borderRadius: '15px', border: '1px solid #FFE5E5' }}>
+                    <Typography fontWeight={700} color="#EE5D50">
+                      {outage}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Connectivity issue detected via Node Cluster B
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 5, opacity: 0.5 }}>
+                  <Typography>No alerts today</Typography>
+                </Box>
+              )}
+            </Stack>
+          </Paper>
+        </Grid>
+
+        {/* Recent Purchases (From your file) */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 3, borderRadius: '24px' }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+              <Typography variant="h6" fontWeight={800}>
+                Recent Plan Purchases
+              </Typography>
+              <Button size="small" endIcon={<ArrowIcon />}>
+                View All
+              </Button>
+            </Stack>
+            <List disablePadding>
+              {data.recentPurchases.map((item) => (
+                <ListItem key={item.id} divider sx={{ py: 1.5, px: 0 }}>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: '#F4F7FE', color: '#4318FF', fontWeight: 700 }}>{item.user[0]}</Avatar>
+                  </ListItemAvatar>
+                  <ListItemText primary={<Typography fontWeight={700}>{item.user}</Typography>} secondary={`Purchased ${item.plan}`} />
+                  <Chip label={item.time} size="small" variant="outlined" />
+                </ListItem>
+              ))}
+            </List>
+          </Paper>
+        </Grid>
+
+        {/* System Activity Feed (From your file) */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 3, borderRadius: '24px' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
+              System Logs
+            </Typography>
+            <List disablePadding>
+              {[
+                { title: 'Version 2.4 Deployed', time: '2m ago', color: '#05CD99', icon: <SystemIcon /> },
+                { title: 'Server Migration', time: '45m ago', color: '#4318FF', icon: <TrendingIcon /> },
+                { title: 'Security Patch', time: '3h ago', color: '#FFB547', icon: <ErrorIcon /> }
+              ].map((log, i) => (
+                <ListItem key={i} sx={{ px: 0 }}>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: alpha(log.color, 0.1), color: log.color }}>
+                      <ArrowIcon sx={{ transform: 'rotate(-45deg)' }} />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText primary={<Typography fontWeight={600}>{log.title}</Typography>} secondary={log.time} />
+                </ListItem>
+              ))}
+            </List>
           </Paper>
         </Grid>
       </Grid>
 
-      {/* Recent Activity */}
-      <Paper sx={{ borderRadius: 3, boxShadow: 3, p: 4, bgcolor: 'background.paper' }}>
-        <Typography variant="h6" component="h2" sx={{ mb: 4, fontWeight: 'semibold', color: 'text.primary' }}>
-          Recent Activity
-        </Typography>
-        <List>
-          {mockDashboardData.recentActivity.map((activity, index) => (
-            <React.Fragment key={activity.id}>
-              <ListItem disablePadding>
-                <ListItemIcon>{activity.icon}</ListItemIcon>
-                <ListItemText
-                  primary={<Typography sx={{ color: 'text.primary' }}>{activity.text}</Typography>}
-                  secondary={<Typography variant="body2" color="text.secondary">{activity.timestamp}</Typography>}
-                />
-              </ListItem>
-              {index < mockDashboardData.recentActivity.length - 1 && (
-                <Divider component="li" sx={{ my: 2 }} />
-              )}
-            </React.Fragment>
-          ))}
-        </List>
-      </Paper>
+      {/* Pulse Animations */}
+      <style>
+        {`
+                    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(238, 93, 80, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(238, 93, 80, 0); } 100% { box-shadow: 0 0 0 0 rgba(238, 93, 80, 0); } }
+                    @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(5, 205, 153, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(5, 205, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(5, 205, 153, 0); } }
+                    .pulse-red { animation: pulse-red 2s infinite; }
+                    .pulse-green { animation: pulse-green 2s infinite; }
+                `}
+      </style>
     </Box>
   );
 };
 
-export default Default;
+export default Dashboard;

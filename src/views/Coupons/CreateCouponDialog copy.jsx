@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -10,18 +10,17 @@ import {
   Grid,
   Divider,
   Typography,
-  FormControlLabel,
-  Switch,
-  Chip,
-  Box
+  Chip
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import axios from 'axios';
-import { fetchAllCitiesWithAreasAdmin } from 'redux/features/Locations/LocationSlice';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllCitiesWithAreasAdmin } from '../../redux/features/Locations/LocationSlice';
+import { createCouponAdmin } from '../../redux/features/Coupons/CouponSlice';
 
 export default function CreateCouponDialog({ open, onClose, onRefresh }) {
   const dispatch = useDispatch();
+  const { allCitiesWithAreas, isLocationLoading } = useSelector((state) => state.location);
+
   const { control, handleSubmit, watch, reset } = useForm({
     defaultValues: {
       title: '',
@@ -30,100 +29,166 @@ export default function CreateCouponDialog({ open, onClose, onRefresh }) {
       value: 0,
       minPurchaseAmount: 0,
       maxDiscount: 0,
-      targeting: { type: 'ALL', geographic: { cities: [], areas: [] } },
-      productRules: { type: 'ALL_PRODUCTS', categories: [], brands: [] },
+      validFrom: '',
+      validUntil: '',
+      targeting: {
+        type: 'ALL',
+        geographic: {
+          cities: [],
+          areas: []
+        }
+      },
+      productRules: {
+        type: 'ALL_PRODUCTS',
+        categories: [],
+        brands: []
+      },
       status: 'ACTIVE'
     }
   });
 
-  const [locations, setLocations] = useState([]); // From CityArea API
   const targetingType = watch('targeting.type');
+  const selectedCities = watch('targeting.geographic.cities');
 
-  //    useEffect(() => {
-  //       dispatch(fetchAllCitiesWithAreasAdmin());
-  //     }, [dispatch]);
+  /* =========================
+     FETCH CITIES + AREAS
+  ========================= */
   useEffect(() => {
     if (open) {
       dispatch(fetchAllCitiesWithAreasAdmin());
     }
   }, [open, dispatch]);
 
-  const onSubmit = async (data) => {
+  /* =========================
+     DERIVED AREAS FROM CITIES
+  ========================= */
+  const availableAreas = useMemo(() => {
+    if (!selectedCities || selectedCities.length === 0) return [];
+
+    return allCitiesWithAreas.filter((city) => selectedCities.includes(city._id)).flatMap((city) => city.areas || []);
+  }, [selectedCities, allCitiesWithAreas]);
+
+  /* =========================
+     NORMALIZE PAYLOAD
+  ========================= */
+  const normalizePayload = (data) => {
+    if (data.targeting.type !== 'GEOGRAPHIC') {
+      return {
+        ...data,
+        targeting: { type: data.targeting.type }
+      };
+    }
+
+    const cities = data.targeting.geographic.cities || [];
+    const areas = data.targeting.geographic.areas || [];
+
+    return {
+      ...data,
+      targeting: {
+        type: 'GEOGRAPHIC',
+        geographic: {
+          cities: cities.includes('__ALL__') ? [] : cities,
+          areas: areas.includes('__ALL__') ? [] : areas
+        }
+      }
+    };
+  };
+
+  /* =========================
+     SUBMIT
+  ========================= */
+  const onSubmit = async (formData) => {
     try {
-      await axios.post('/api/coupons', data);
+      const payload = normalizePayload(formData);
+      await dispatch(createCouponAdmin(payload));
       reset();
-      onRefresh();
+      onRefresh?.();
       onClose();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error creating coupon');
+    } catch (error) {
+      console.error('Create coupon error:', error);
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 'bold' }}>Create New Campaign Offer</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 800 }}>Create New Campaign Offer</DialogTitle>
+
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent dividers>
           <Grid container spacing={3}>
-            {/* Basic Info */}
-            <Grid item xs={12} md={6}>
-              <Controller
-                name="title"
-                control={control}
-                render={({ field }) => <TextField {...field} label="Coupon Title" fullWidth placeholder="E.g. Diwali Dhamaka" />}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Controller
-                name="code"
-                control={control}
-                render={({ field }) => <TextField {...field} label="Coupon Code" fullWidth placeholder="DIWALI2024" />}
-              />
+            {/* ================= BASIC INFO ================= */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Controller name="title" control={control} render={({ field }) => <TextField {...field} label="Coupon Title" fullWidth />} />
             </Grid>
 
-            {/* Values */}
-            <Grid item xs={4}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Controller name="code" control={control} render={({ field }) => <TextField {...field} label="Coupon Code" fullWidth />} />
+            </Grid>
+
+            {/* ================= VALUES ================= */}
+            <Grid size={{ xs: 4 }}>
               <Controller
                 name="type"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Type" fullWidth>
+                  <TextField {...field} select label="Discount Type" fullWidth>
                     <MenuItem value="PERCENTAGE">Percentage</MenuItem>
-                    <MenuItem value="FLAT">Flat Discount</MenuItem>
+                    <MenuItem value="FIXED_AMOUNT">Flat Amount</MenuItem>
                   </TextField>
                 )}
               />
             </Grid>
-            <Grid item xs={4}>
+
+            <Grid size={{ xs: 4 }}>
               <Controller
                 name="value"
                 control={control}
                 render={({ field }) => <TextField {...field} type="number" label="Value" fullWidth />}
               />
             </Grid>
-            <Grid item xs={4}>
+
+            <Grid size={{ xs: 4 }}>
               <Controller
                 name="minPurchaseAmount"
                 control={control}
-                render={({ field }) => <TextField {...field} type="number" label="Min Purchase (₹)" fullWidth />}
+                render={({ field }) => <TextField {...field} type="number" label="Min Purchase ₹" fullWidth />}
               />
             </Grid>
 
-            <Grid item xs={12}>
+            {/* ================= VALIDITY ================= */}
+            <Grid size={{ xs: 6 }}>
+              <Controller
+                name="validFrom"
+                control={control}
+                render={({ field }) => <TextField {...field} type="date" label="Valid From" InputLabelProps={{ shrink: true }} fullWidth />}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 6 }}>
+              <Controller
+                name="validUntil"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} type="date" label="Valid Until" InputLabelProps={{ shrink: true }} fullWidth />
+                )}
+              />
+            </Grid>
+
+            {/* ================= TARGETING ================= */}
+            <Grid size={{ xs: 12 }}>
               <Divider>
                 <Chip label="Targeting" />
               </Divider>
             </Grid>
 
-            {/* Geographic Targeting */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="targeting.type"
                 control={control}
                 render={({ field }) => (
                   <TextField {...field} select label="Targeting Type" fullWidth>
                     <MenuItem value="ALL">All Users</MenuItem>
-                    <MenuItem value="GEOGRAPHIC">Geographic (City/Area)</MenuItem>
+                    <MenuItem value="GEOGRAPHIC">Geographic (City / Area)</MenuItem>
                     <MenuItem value="INDIVIDUAL">Specific Users</MenuItem>
                   </TextField>
                 )}
@@ -132,53 +197,83 @@ export default function CreateCouponDialog({ open, onClose, onRefresh }) {
 
             {targetingType === 'GEOGRAPHIC' && (
               <>
-                <Grid item xs={6}>
+                {/* ================= CITIES ================= */}
+                <Grid size={{ xs: 6 }}>
                   <Controller
                     name="targeting.geographic.cities"
                     control={control}
                     render={({ field }) => (
-                      <TextField {...field} select label="Select Cities" fullWidth SelectProps={{ multiple: true }}>
-                        {locations.map((loc) => (
-                          <MenuItem key={loc._id} value={loc._id}>
-                            {loc.city}
+                      <TextField {...field} select fullWidth label="Cities" SelectProps={{ multiple: true }} disabled={isLocationLoading}>
+                        <MenuItem value="__ALL__">All Cities</MenuItem>
+                        {allCitiesWithAreas.map((city) => (
+                          <MenuItem key={city._id} value={city._id}>
+                            {city.city}
                           </MenuItem>
                         ))}
                       </TextField>
                     )}
                   />
                 </Grid>
-                <Grid item xs={12}>
+
+                {/* ================= AREAS ================= */}
+                <Grid size={{ xs: 6 }}>
+                  <Controller
+                    name="targeting.geographic.areas"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        select
+                        fullWidth
+                        label="Areas"
+                        SelectProps={{ multiple: true }}
+                        disabled={!selectedCities?.length}
+                      >
+                        <MenuItem value="__ALL__">All Areas</MenuItem>
+                        {availableAreas.map((area) => (
+                          <MenuItem key={area._id} value={area._id}>
+                            {area.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
                   <Typography variant="caption" color="primary">
-                    Users in these cities will receive an FCM Push Notification immediately.
+                    Leaving city or area empty means entire coverage.
                   </Typography>
                 </Grid>
               </>
             )}
 
-            <Grid item xs={12}>
+            {/* ================= PRODUCT RULES ================= */}
+            <Grid size={{ xs: 12 }}>
               <Divider>
                 <Chip label="Product Rules" />
               </Divider>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="productRules.type"
                 control={control}
                 render={({ field }) => (
                   <TextField {...field} select label="Rule Type" fullWidth>
                     <MenuItem value="ALL_PRODUCTS">All Products</MenuItem>
-                    <MenuItem value="CATEGORY">Specific Categories</MenuItem>
-                    <MenuItem value="BRAND">Specific Brands</MenuItem>
+                    <MenuItem value="CATEGORY">Category</MenuItem>
+                    <MenuItem value="BRAND">Brand</MenuItem>
                   </TextField>
                 )}
               />
             </Grid>
           </Grid>
         </DialogContent>
+
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" color="primary" size="large">
+          <Button type="submit" variant="contained" size="large">
             Create & Notify Users
           </Button>
         </DialogActions>

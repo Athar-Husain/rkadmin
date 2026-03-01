@@ -1,280 +1,303 @@
-// src/pages/Default.jsx
 import React from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Grid,
   Card,
   Stack,
-  Divider,
+  Avatar,
+  Chip,
   List,
   ListItem,
-  ListItemIcon,
+  ListItemAvatar,
   ListItemText,
-  Avatar,
+  Paper,
   useTheme,
-  alpha
+  alpha,
+  Button,
+  Divider
 } from '@mui/material';
+import { useSelector } from 'react-redux';
 import ApexCharts from 'react-apexcharts';
 
 // Icons
-import GroupTwoToneIcon from '@mui/icons-material/GroupTwoTone';
-import RouterTwoToneIcon from '@mui/icons-material/RouterTwoTone';
-import ConfirmationNumberTwoToneIcon from '@mui/icons-material/ConfirmationNumberTwoTone';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import AccountBalanceWalletTwoToneIcon from '@mui/icons-material/AccountBalanceWalletTwoTone';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import {
+  PeopleAltTwoTone as PeopleIcon,
+  ConfirmationNumberTwoTone as CampaignIcon,
+  ShoppingBagTwoTone as RedemptionIcon,
+  TrendingUp as TrendingIcon,
+  NotificationsActiveTwoTone as NotificationIcon,
+  ErrorOutlineTwoTone as ErrorIcon,
+  GroupWorkTwoTone as PrivateIcon,
+  ShareTwoTone as ReferralIcon,
+  ArrowForwardRounded as ArrowIcon
+} from '@mui/icons-material';
 
-// KPI Card Component for reuse and clean code
-const KPICard = ({ title, value, trend, icon, color }) => {
-  const theme = useTheme();
-  const isPositive = trend > 0;
-
-  return (
-    <Card
+// Secondary KPI Card
+const MiniMetricCard = ({ title, value, icon, color }) => (
+  <Paper
+    elevation={0}
+    sx={{
+      p: 2,
+      borderRadius: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      bgcolor: '#fff',
+      border: '1px solid #E9EDF7',
+      transition: 'all 0.3s ease',
+      '&:hover': {
+        boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
+        transform: 'translateY(-2px)'
+      }
+    }}
+  >
+    <Avatar
       sx={{
-        p: 2.5,
-        borderRadius: 4,
-        height: '100%',
-        border: '1px solid',
-        borderColor: alpha(theme.palette.divider, 0.1),
-        boxShadow: '0 4px 20px 0 rgba(0,0,0,0.05)',
-        position: 'relative',
-        overflow: 'hidden'
+        bgcolor: alpha(color, 0.1),
+        color: color,
+        width: 42,
+        height: 42,
+        borderRadius: '10px'
       }}
     >
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary" fontWeight={600} gutterBottom>
-            {title}
-          </Typography>
-          <Typography variant="h4" fontWeight={800} sx={{ color: '#1A1C1E' }}>
-            {value}
-          </Typography>
-          {trend && (
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
-              <TrendingUpIcon
-                sx={{
-                  fontSize: 16,
-                  color: isPositive ? 'success.main' : 'error.main',
-                  transform: isPositive ? 'none' : 'rotate(180deg)'
-                }}
-              />
-              <Typography variant="caption" fontWeight={700} color={isPositive ? 'success.main' : 'error.main'}>
-                {isPositive ? '+' : ''}
-                {trend}%
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {' '}
-                vs last month
-              </Typography>
-            </Stack>
-          )}
-        </Box>
-        <Avatar
-          sx={{
-            bgcolor: alpha(theme.palette[color].main, 0.1),
-            color: theme.palette[color].main,
-            width: 50,
-            height: 50,
-            borderRadius: 3
-          }}
-        >
-          {icon}
-        </Avatar>
-      </Stack>
-      {/* Subtle background decoration */}
-      <Box
-        sx={{
-          position: 'absolute',
-          right: -10,
-          bottom: -10,
-          opacity: 0.03,
-          transform: 'rotate(-20deg)'
-        }}
-      >
-        {React.cloneElement(icon, { sx: { fontSize: 80 } })}
-      </Box>
-    </Card>
-  );
-};
+      {icon}
+    </Avatar>
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={700}>
+        {title}
+      </Typography>
+      <Typography variant="h6" fontWeight={800} color="#1B2559">
+        {value}
+      </Typography>
+    </Box>
+  </Paper>
+);
 
-const Default = () => {
+const Dashboard = () => {
   const theme = useTheme();
+  const { stats } = useSelector((state) => state.Dashboard || {});
+  const { Admin } = useSelector((state) => state.admin || {});
 
-  // Revenue Trend Data (Area Chart)
-  const revenueChartOptions = {
-    chart: { id: 'revenue-trend', toolbar: { show: false }, sparkline: { enabled: false } },
-    colors: [theme.palette.primary.main],
-    dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 3 },
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05 } },
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'], axisBorder: { show: false } },
-    yaxis: { labels: { show: false } },
-    grid: { borderColor: alpha(theme.palette.divider, 0.1), strokeDashArray: 4 }
+  // Fallback Data (Until API Connects)
+  const data = stats || {
+    totalUsers: 1280,
+    activeCampaigns: 6,
+    totalRedemptions: 342,
+    redemptionRate: 18.4,
+    notificationsSent: 4520,
+    failedNotifications: 120,
+    privateCampaigns: 2,
+    referralCampaigns: 1,
+    redemptionTrend: [12, 22, 18, 35, 40, 65, 80],
+    topCampaigns: [
+      { name: 'TV Fest Offer', redemptions: 120, rate: 24 },
+      { name: 'AC Summer Sale', redemptions: 95, rate: 18 }
+    ],
+    recentRedemptions: [
+      { id: 1, user: 'Ravi Kumar', code: 'TV500', category: 'TV', time: '5m ago' },
+      { id: 2, user: 'Sneha Rao', code: 'AC2000', category: 'AC', time: '20m ago' }
+    ],
+    recentActivities: [
+      { id: 1, title: 'Campaign TV500 Activated', time: '10m ago' },
+      { id: 2, title: 'CSV Upload Processed (250 Users)', time: '45m ago' },
+      { id: 3, title: 'AC Summer Sale Paused', time: '2h ago' }
+    ]
   };
 
-  const leadSourcesOptions = {
-    labels: ['Organic', 'Ads', 'Referral', 'Direct'],
-    colors: [theme.palette.primary.main, theme.palette.info.main, theme.palette.warning.main, theme.palette.success.main],
-    plotOptions: { pie: { donut: { size: '75%', labels: { show: true, total: { show: true, label: 'Total Leads', fontSize: '14px' } } } } },
-    legend: { position: 'bottom' },
-    stroke: { show: false }
+  const chartOptions = {
+    chart: { toolbar: { show: false } },
+    colors: ['#4318FF'],
+    stroke: { curve: 'smooth', width: 3 },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.45,
+        opacityTo: 0.05
+      }
+    },
+    xaxis: {
+      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+      axisBorder: { show: false }
+    },
+    grid: {
+      borderColor: alpha(theme.palette.divider, 0.1),
+      strokeDashArray: 4
+    }
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F8FAFC', minHeight: '100vh' }}>
-      {/* Welcome Header */}
-      <Box sx={{ mb: 5 }}>
-        <Typography variant="h4" fontWeight={800} color="text.primary">
-          Command Center
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          System overview and real-time performance metrics.
-        </Typography>
-      </Box>
+    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F4F7FE', minHeight: '100vh' }}>
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+        <Box>
+          <Typography variant="h4" fontWeight={900} color="#1B2559">
+            Campaign Intelligence Center
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Performance overview for <b>{Admin?.firstName || 'Admin'}</b>
+          </Typography>
+        </Box>
+        <Chip
+          label="System Operational"
+          sx={{
+            bgcolor: '#fff',
+            fontWeight: 700,
+            borderRadius: '10px',
+            border: '1px solid #E9EDF7'
+          }}
+        />
+      </Stack>
 
-      {/* KPI Section */}
+      {/* Tier 1 - Primary KPIs */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="TOTAL CUSTOMERS" value="1,250" trend={12} color="primary" icon={<GroupTwoToneIcon />} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="ACTIVE NODES" value="980" trend={2.4} color="success" icon={<RouterTwoToneIcon />} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="PENDING TICKETS" value="45" trend={-5} color="error" icon={<ConfirmationNumberTwoToneIcon />} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="MONTHLY REVENUE" value="₹75,000" trend={8.1} color="secondary" icon={<AccountBalanceWalletTwoToneIcon />} />
-        </Grid>
-      </Grid>
-
-      {/* Middle Section: Main Analytics */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EFF2F5', boxShadow: 'none' }}>
-            <Stack direction="row" justifyContent="space-between" sx={{ mb: 3 }}>
-              <Typography variant="h6" fontWeight={700}>
-                Revenue Growth
-              </Typography>
-              <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), width: 32, height: 32 }}>
-                <TrendingUpIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-              </Avatar>
-            </Stack>
-            <ApexCharts
-              options={revenueChartOptions}
-              series={[{ name: 'Revenue', data: [31, 40, 28, 51, 42, 109, 100] }]}
-              type="area"
-              height={320}
-            />
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EFF2F5', boxShadow: 'none', height: '100%' }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
-              Lead Attribution
-            </Typography>
-            <Box sx={{ mt: 4 }}>
-              <ApexCharts options={leadSourcesOptions} series={[44, 25, 13, 18]} type="donut" height={320} />
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Bottom Section: Operations */}
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Paper sx={{ borderRadius: 4, border: '1px solid #EFF2F5', boxShadow: 'none' }}>
-            <Box sx={{ p: 3, borderBottom: '1px solid #F1F4F9' }}>
-              <Typography variant="h6" fontWeight={700}>
-                Live Network Activity
-              </Typography>
-            </Box>
-            <List sx={{ p: 0 }}>
-              {[
-                {
-                  label: 'System Update',
-                  sub: 'Version 2.4 deployment successful',
-                  time: '2m ago',
-                  color: 'success',
-                  icon: <FlashOnIcon fontSize="small" />
-                },
-                {
-                  label: 'Node Outage',
-                  sub: 'Connection lost in Sector-7',
-                  time: '14m ago',
-                  color: 'error',
-                  icon: <ErrorOutlineIcon fontSize="small" />
-                },
-                {
-                  label: 'New Lead',
-                  sub: 'High priority lead from Website',
-                  time: '1h ago',
-                  color: 'info',
-                  icon: <TrendingUpIcon fontSize="small" />
-                }
-              ].map((activity, i) => (
-                <ListItem key={i} divider={i !== 2} sx={{ py: 2 }}>
-                  <ListItemIcon>
-                    <Avatar sx={{ bgcolor: alpha(theme.palette[activity.color].main, 0.1), color: theme.palette[activity.color].main }}>
-                      {activity.icon}
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText primary={<Typography fontWeight={600}>{activity.label}</Typography>} secondary={activity.sub} />
-                  <Typography variant="caption" color="text.secondary">
-                    {activity.time}
+        {[
+          { title: 'Total Users', value: data.totalUsers, icon: <PeopleIcon />, color: '#4318FF' },
+          { title: 'Active Campaigns', value: data.activeCampaigns, icon: <CampaignIcon />, color: '#05CD99' },
+          { title: 'Total Redemptions', value: data.totalRedemptions, icon: <RedemptionIcon />, color: '#FFB547' },
+          { title: 'Redemption Rate', value: `${data.redemptionRate}%`, icon: <TrendingIcon />, color: '#6AD2FF' }
+        ].map((kpi, i) => (
+          <Grid item xs={12} sm={6} md={3} key={i}>
+            <Card
+              sx={{
+                p: 2.5,
+                borderRadius: '20px',
+                border: '1px solid #F1F4F9',
+                boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)'
+              }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar
+                  sx={{
+                    bgcolor: '#F4F7FE',
+                    color: kpi.color,
+                    width: 56,
+                    height: 56,
+                    borderRadius: '15px'
+                  }}
+                >
+                  {kpi.icon}
+                </Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                    {kpi.title}
                   </Typography>
+                  <Typography variant="h5" fontWeight={800} color="#1B2559">
+                    {kpi.value}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Tier 2 - Notification Metrics */}
+      <Typography variant="subtitle1" fontWeight={800} color="#1B2559" sx={{ mb: 2, ml: 1 }}>
+        Campaign & Notification Overview
+      </Typography>
+
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <MiniMetricCard title="Notifications Sent" value={data.notificationsSent} icon={<NotificationIcon />} color="#4318FF" />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MiniMetricCard title="Failed Deliveries" value={data.failedNotifications} icon={<ErrorIcon />} color="#EE5D50" />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MiniMetricCard title="Private Campaigns" value={data.privateCampaigns} icon={<PrivateIcon />} color="#6AD2FF" />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MiniMetricCard title="Referral Campaigns" value={data.referralCampaigns} icon={<ReferralIcon />} color="#05CD99" />
+        </Grid>
+      </Grid>
+
+      {/* Tier 3 - Charts & Lists */}
+      <Grid container spacing={3}>
+        {/* Redemption Trend */}
+        <Grid item xs={12} lg={8}>
+          <Paper sx={{ p: 3, borderRadius: '24px' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 3 }}>
+              Coupon Redemptions Trend
+            </Typography>
+            <ApexCharts options={chartOptions} series={[{ name: 'Redemptions', data: data.redemptionTrend }]} type="area" height={320} />
+          </Paper>
+        </Grid>
+
+        {/* Top Campaigns */}
+        <Grid item xs={12} lg={4}>
+          <Paper sx={{ p: 3, borderRadius: '24px', height: '100%' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
+              Top Performing Campaigns
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Stack spacing={2}>
+              {data.topCampaigns.map((campaign, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    p: 2,
+                    borderRadius: '15px',
+                    border: '1px solid #E9EDF7'
+                  }}
+                >
+                  <Typography fontWeight={700}>{campaign.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {campaign.redemptions} used • {campaign.rate}% success
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
+        </Grid>
+
+        {/* Recent Redemptions */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, borderRadius: '24px' }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+              <Typography variant="h6" fontWeight={800}>
+                Recent Redemptions
+              </Typography>
+              <Button size="small" endIcon={<ArrowIcon />}>
+                View All
+              </Button>
+            </Stack>
+            <List disablePadding>
+              {data.recentRedemptions.map((item) => (
+                <ListItem key={item.id} divider sx={{ px: 0 }}>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: '#F4F7FE', color: '#4318FF', fontWeight: 700 }}>{item.user[0]}</Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={<Typography fontWeight={700}>{item.user}</Typography>}
+                    secondary={`Used ${item.code} on ${item.category}`}
+                  />
+                  <Chip label={item.time} size="small" variant="outlined" />
                 </ListItem>
               ))}
             </List>
           </Paper>
         </Grid>
 
-        {/* Quick Actions / Summary Card */}
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Card
-            sx={{
-              background: 'linear-gradient(135deg, #2363faff 0%, #99b6ffff 100%)',
-              color: 'white',
-              borderRadius: 4,
-              p: 3,
-              height: '100%'
-            }}
-          >
-            <Typography variant="h5" fontWeight={700} gutterBottom>
-              System Health
+        {/* Campaign Activity */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, borderRadius: '24px' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
+              Campaign Activity
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8, mb: 4 }}>
-              All systems are currently operational. No scheduled maintenance for the next 48 hours.
-            </Typography>
-            <Divider sx={{ borderColor: alpha('#fff', 0.1), mb: 3 }} />
-            <Grid container spacing={2}>
-              <Grid size={{xs:6}}>
-                <Typography variant="h4" fontWeight={800}>
-                  99.9%
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Uptime
-                </Typography>
-              </Grid>
-              <Grid size={{xs:6}}>
-                <Typography variant="h4" fontWeight={800}>
-                  12ms
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Latency
-                </Typography>
-              </Grid>
-            </Grid>
-          </Card>
+            <List disablePadding>
+              {data.recentActivities.map((log) => (
+                <ListItem key={log.id} sx={{ px: 0 }}>
+                  <ListItemText primary={<Typography fontWeight={600}>{log.title}</Typography>} secondary={log.time} />
+                </ListItem>
+              ))}
+            </List>
+          </Paper>
         </Grid>
       </Grid>
     </Box>
   );
 };
 
-export default Default;
+export default Dashboard;

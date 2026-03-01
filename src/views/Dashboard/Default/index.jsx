@@ -1,284 +1,272 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchSalesAnalytics,
+  fetchUserAnalytics,
+  fetchStoreAnalytics,
+  fetchCouponAnalytics
+} from '../../../redux/features/Analytics/AnalyticsSlice';
+
 import {
   Box,
-  Typography,
   Grid,
-  Card,
-  Stack,
-  Avatar,
-  Chip,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
   Paper,
-  useTheme,
-  alpha,
-  Button,
+  Typography,
+  CircularProgress,
+  Stack,
   Divider,
-  IconButton
+  IconButton,
+  Tooltip as MuiTooltip,
+  Chip,
+  Avatar,
+  useTheme
 } from '@mui/material';
-import { useSelector } from 'react-redux';
-import ApexCharts from 'react-apexcharts';
+import { TrendingUp, People, Storefront, LocalActivity, MoreVert, FileDownload, Assessment } from '@mui/icons-material';
 
-// Icons
-import {
-  PeopleAltTwoTone as PeopleIcon,
-  RouterTwoTone as RouterIcon,
-  AccountBalanceWalletTwoTone as WalletIcon,
-  ConfirmationNumberTwoTone as TicketIcon,
-  MapTwoTone as MapIcon,
-  TrendingUp as TrendingIcon,
-  ErrorOutlineTwoTone as ErrorIcon,
-  ShoppingBagTwoTone as PurchaseIcon,
-  FlashOnTwoTone as SystemIcon,
-  ArrowForwardRounded as ArrowIcon,
-  GroupWorkTwoTone as TeamIcon,
-  InventoryTwoTone as PlanIcon,
-  ShareTwoTone as ReferralIcon,
-  MoreVertRounded as MoreIcon
-} from '@mui/icons-material';
-
-// --- Secondary Mini KPI Component ---
-const MiniResourceCard = ({ title, value, icon, color }) => (
-  <Paper
-    elevation={0}
-    sx={{
-      p: 2,
-      borderRadius: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2,
-      bgcolor: '#fff',
-      border: '1px solid #E9EDF7',
-      '&:hover': { boxShadow: '0 10px 20px rgba(0,0,0,0.05)', transform: 'translateY(-2px)' },
-      transition: 'all 0.3s ease'
-    }}
-  >
-    <Avatar sx={{ bgcolor: alpha(color, 0.1), color: color, width: 42, height: 42, borderRadius: '10px' }}>
-      {React.cloneElement(icon, { sx: { fontSize: 22 } })}
-    </Avatar>
-    <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={700}>
-        {title}
-      </Typography>
-      <Typography variant="h6" fontWeight={800} color="#1B2559">
-        {value}
-      </Typography>
-    </Box>
-  </Paper>
-);
+import { DataGrid } from '@mui/x-data-grid';
+import Chart from 'react-apexcharts';
+import { motion, AnimatePresence } from 'framer-motion';
+import dayjs from 'dayjs';
 
 const Dashboard = () => {
+  const dispatch = useDispatch();
   const theme = useTheme();
-  const { stats, isLoading } = useSelector((state) => state.Dashboard || {});
-  const { Admin } = useSelector((state) => state.admin || {});
+  const { salesAnalytics, userAnalytics, storeAnalytics, couponAnalytics } = useSelector((state) => state.analytics);
 
-  // Combined Data Object
-  const data = stats || {
-    totalCustomers: '1,280',
-    revenue: '₹75,000',
-    activeNodes: '980',
-    pendingTickets: '12',
-    totalTeam: '18',
-    activePlans: '08',
-    referrals: '142',
-    totalAreas: '24',
-    outages: ['Fire Station', 'Durgamma Gudi'],
-    recentPurchases: [
-      { id: 1, user: 'Amit Sharma', plan: 'Gold Unlimited', time: '2m ago' },
-      { id: 2, user: 'Sneha Rao', plan: 'Fiber Pro', time: '15m ago' },
-      { id: 3, user: 'John Doe', plan: 'Enterprise 1GB', time: '1h ago' }
-    ]
-  };
+  const [dateRange] = useState({
+    start: dayjs().subtract(30, 'day').toISOString(),
+    end: dayjs().toISOString()
+  });
 
-  const chartOptions = {
-    chart: { toolbar: { show: false }, sparkline: { enabled: false } },
-    colors: ['#4318FF'],
-    stroke: { curve: 'smooth', width: 3 },
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05 } },
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'], axisBorder: { show: false } },
-    yaxis: { labels: { show: false } },
-    grid: { borderColor: alpha(theme.palette.divider, 0.1), strokeDashArray: 4 }
-  };
+  useEffect(() => {
+    dispatch(fetchSalesAnalytics(dateRange));
+    dispatch(fetchUserAnalytics());
+    dispatch(fetchStoreAnalytics());
+    dispatch(fetchCouponAnalytics());
+  }, [dispatch, dateRange]);
+
+  const isReady = salesAnalytics && userAnalytics && storeAnalytics && couponAnalytics;
+
+  /* ================= CHARTS CONFIG ================= */
+
+  const salesTrendConfig = useMemo(
+    () => ({
+      series: [{ name: 'Revenue', data: salesAnalytics?.trend?.map((d) => d.totalSales) || [] }],
+      options: {
+        chart: { type: 'area', sparkline: { enabled: false }, toolbar: { show: false } },
+        colors: [theme.palette.primary.main],
+        fill: {
+          type: 'gradient',
+          gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [20, 100] }
+        },
+        stroke: { curve: 'smooth', width: 3 },
+        xaxis: { categories: salesAnalytics?.trend?.map((d) => `${d._id.day}/${d._id.month}`) || [] },
+        yaxis: { labels: { formatter: (val) => `₹${(val / 1000).toFixed(1)}k` } },
+        dataLabels: { enabled: false },
+        tooltip: { theme: 'light', x: { show: true } }
+      }
+    }),
+    [salesAnalytics, theme]
+  );
+
+  const userStatusConfig = useMemo(
+    () => ({
+      series: userAnalytics?.userStatus?.map((s) => s.count) || [],
+      options: {
+        labels: ['Purchased', 'Lead/Browsing'],
+        colors: [theme.palette.success.main, theme.palette.info.main],
+        legend: { position: 'bottom' },
+        plotOptions: { pie: { donut: { size: '75%' } } },
+        dataLabels: { enabled: false }
+      }
+    }),
+    [userAnalytics, theme]
+  );
+
+  /* ================= STORE DATA ================= */
+
+  const storeColumns = [
+    {
+      field: 'name',
+      headerName: 'Store Name',
+      flex: 1.5,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Avatar sx={{ bgcolor: theme.palette.primary.light, width: 32, height: 32, fontSize: '0.8rem' }}>{params.value.charAt(0)}</Avatar>
+          <Typography variant="body2" fontWeight={500}>
+            {params.value}
+          </Typography>
+        </Stack>
+      )
+    },
+    { field: 'city', headerName: 'City', flex: 1 },
+    {
+      field: 'sales',
+      headerName: 'Revenue',
+      flex: 1,
+      renderCell: (p) => (
+        <Typography variant="body2" color="primary.main" fontWeight={700}>
+          {p.value}
+        </Typography>
+      )
+    },
+    { field: 'customers', headerName: 'Customers', flex: 0.8, align: 'center' },
+    {
+      field: 'status',
+      headerName: 'Status',
+      flex: 1,
+      renderCell: () => <Chip label="Operational" size="small" color="success" variant="outlined" />
+    }
+  ];
+
+  const storeRows = useMemo(
+    () =>
+      storeAnalytics?.storePerformance?.map((s) => ({
+        id: s.storeId,
+        name: s.store?.name || 'Unknown',
+        city: s.store?.location?.city || 'N/A',
+        sales: `₹${s.totalSales.toLocaleString()}`,
+        customers: s.uniqueCustomersCount
+      })) || [],
+    [storeAnalytics]
+  );
+
+  if (!isReady)
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="80vh">
+        <CircularProgress thickness={4} size={50} />
+        <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+          Preparing your data...
+        </Typography>
+      </Box>
+    );
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F4F7FE', minHeight: '100vh' }}>
-      {/* 1. Header Area */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+    <Box p={{ xs: 2, md: 5 }} bgcolor="#f8fafc" minHeight="100vh">
+      {/* HEADER SECTION */}
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={5}>
         <Box>
-          <Typography variant="h4" fontWeight={900} color="#1B2559">
-            Command Center
+          <Typography variant="h4" fontWeight={800} color="slate.900" gutterBottom>
+            Executive Dashboard
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Systems overview for <b>{Admin?.firstName || 'Admin'}</b>
+            Insights for the period:{' '}
+            <span style={{ fontWeight: 600 }}>
+              {dayjs(dateRange.start).format('MMM D')} - {dayjs(dateRange.end).format('MMM D, YYYY')}
+            </span>
           </Typography>
         </Box>
-        <Chip
-          label={data.outages.length > 0 ? 'System Alert' : 'System Healthy'}
-          onDelete={() => {}}
-          deleteIcon={
-            <Box
-              className={data.outages.length > 0 ? 'pulse-red' : 'pulse-green'}
-              sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: data.outages.length > 0 ? '#EE5D50' : '#05CD99' }}
-            />
-          }
-          sx={{ bgcolor: '#fff', fontWeight: 700, p: 1, borderRadius: '10px', border: '1px solid #E9EDF7' }}
-        />
+        <Stack direction="row" spacing={2}>
+          <IconButton sx={{ bgcolor: '#fff', border: '1px solid #e2e8f0' }}>
+            <FileDownload />
+          </IconButton>
+          <IconButton sx={{ bgcolor: theme.palette.primary.main, color: '#fff', '&:hover': { bgcolor: theme.palette.primary.dark } }}>
+            <Assessment />
+          </IconButton>
+        </Stack>
       </Stack>
 
-      {/* 2. Tier 1: Primary KPIs */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {[
-          { title: 'Revenue', value: data.revenue, icon: <WalletIcon />, color: '#4318FF', trend: 8.2 },
-          { title: 'Total Customers', value: data.totalCustomers, icon: <PeopleIcon />, color: '#6AD2FF', trend: 12 },
-          { title: 'Active Nodes', value: data.activeNodes, icon: <RouterIcon />, color: '#05CD99', trend: 2.4 },
-          { title: 'Operational Areas', value: data.totalAreas, icon: <MapIcon />, color: '#FFB547', trend: 0 }
-        ].map((kpi, i) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
-            <Card sx={{ p: 2.5, borderRadius: '20px', border: '1px solid #F1F4F9', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)' }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: '#F4F7FE', color: kpi.color, width: 56, height: 56, borderRadius: '15px' }}>{kpi.icon}</Avatar>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                    {kpi.title}
-                  </Typography>
-                  <Typography variant="h5" fontWeight={800} color="#1B2559">
-                    {kpi.value}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Card>
-          </Grid>
-        ))}
+      {/* KPI GRID */}
+      <Grid container spacing={3} mb={5}>
+        <KpiCard
+          title="Gross Revenue"
+          value={`₹${salesAnalytics.summary.totalSales.toLocaleString()}`}
+          icon={<TrendingUp />}
+          color="#6366f1"
+        />
+        <KpiCard title="Total Customers" value={userAnalytics.totalUsers} icon={<People />} color="#10b981" />
+        <KpiCard
+          title="Avg. Order Value"
+          value={`₹${Math.round(salesAnalytics.summary.avgTransaction)}`}
+          icon={<Storefront />}
+          color="#f59e0b"
+        />
+        <KpiCard title="Coupon Redemptions" value={couponAnalytics.totalRedemptions} icon={<LocalActivity />} color="#ec4899" />
       </Grid>
 
-      {/* 3. Tier 2: Secondary Resource Metrics (The missing cards) */}
-      <Typography variant="subtitle1" fontWeight={800} color="#1B2559" sx={{ mb: 2, ml: 1 }}>
-        Resource Overview
-      </Typography>
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MiniResourceCard title="Team Members" value={data.totalTeam} icon={<TeamIcon />} color="#4318FF" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MiniResourceCard title="Active Plans" value={data.activePlans} icon={<PlanIcon />} color="#05CD99" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MiniResourceCard title="Referrals" value={data.referrals} icon={<ReferralIcon />} color="#6AD2FF" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MiniResourceCard title="Support Tickets" value={data.pendingTickets} icon={<TicketIcon />} color="#EE5D50" />
-        </Grid>
-      </Grid>
-
-      {/* 4. Tier 3: Charts & Feeds */}
-      <Grid container spacing={3}>
-        {/* Revenue Chart */}
+      <Grid container spacing={4}>
+        {/* MAIN REVENUE CHART */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
-            <Typography variant="h6" fontWeight={800} sx={{ mb: 3 }}>
-              Revenue Growth Trend
-            </Typography>
-            <ApexCharts
-              options={chartOptions}
-              series={[{ name: 'Revenue', data: [31, 40, 28, 51, 42, 109, 100] }]}
-              type="area"
-              height={320}
-            />
-          </Paper>
-        </Grid>
-
-        {/* Network Alerts */}
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper sx={{ p: 3, borderRadius: '24px', height: '100%' }}>
-            <Typography variant="h6" fontWeight={800} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ErrorIcon color="error" /> Outage Monitor
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Stack spacing={2}>
-              {data.outages.length > 0 ? (
-                data.outages.map((outage, i) => (
-                  <Box key={i} sx={{ p: 2, bgcolor: '#FFF5F5', borderRadius: '15px', border: '1px solid #FFE5E5' }}>
-                    <Typography fontWeight={700} color="#EE5D50">
-                      {outage}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Connectivity issue detected via Node Cluster B
-                    </Typography>
-                  </Box>
-                ))
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 5, opacity: 0.5 }}>
-                  <Typography>No alerts today</Typography>
-                </Box>
-              )}
-            </Stack>
-          </Paper>
-        </Grid>
-
-        {/* Recent Purchases (From your file) */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, borderRadius: '24px' }}>
-            <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
-              <Typography variant="h6" fontWeight={800}>
-                Recent Plan Purchases
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, border: '1px solid #e2e8f0' }}>
+            <Stack direction="row" justifyContent="space-between" mb={3}>
+              <Typography variant="h6" fontWeight={700}>
+                Revenue Trajectory
               </Typography>
-              <Button size="small" endIcon={<ArrowIcon />}>
-                View All
-              </Button>
+              <MuiTooltip title="Options">
+                <IconButton size="small">
+                  <MoreVert />
+                </IconButton>
+              </MuiTooltip>
             </Stack>
-            <List disablePadding>
-              {data.recentPurchases.map((item) => (
-                <ListItem key={item.id} divider sx={{ py: 1.5, px: 0 }}>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: '#F4F7FE', color: '#4318FF', fontWeight: 700 }}>{item.user[0]}</Avatar>
-                  </ListItemAvatar>
-                  <ListItemText primary={<Typography fontWeight={700}>{item.user}</Typography>} secondary={`Purchased ${item.plan}`} />
-                  <Chip label={item.time} size="small" variant="outlined" />
-                </ListItem>
-              ))}
-            </List>
+            <Chart options={salesTrendConfig.options} series={salesTrendConfig.series} type="area" height={350} />
           </Paper>
         </Grid>
 
-        {/* System Activity Feed (From your file) */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, borderRadius: '24px' }}>
-            <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
-              System Logs
+        {/* CUSTOMER SEGMENTATION */}
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, border: '1px solid #e2e8f0', height: '100%' }}>
+            <Typography variant="h6" fontWeight={700} mb={3}>
+              Customer Conversion
             </Typography>
-            <List disablePadding>
-              {[
-                { title: 'Version 2.4 Deployed', time: '2m ago', color: '#05CD99', icon: <SystemIcon /> },
-                { title: 'Server Migration', time: '45m ago', color: '#4318FF', icon: <TrendingIcon /> },
-                { title: 'Security Patch', time: '3h ago', color: '#FFB547', icon: <ErrorIcon /> }
-              ].map((log, i) => (
-                <ListItem key={i} sx={{ px: 0 }}>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: alpha(log.color, 0.1), color: log.color }}>
-                      <ArrowIcon sx={{ transform: 'rotate(-45deg)' }} />
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText primary={<Typography fontWeight={600}>{log.title}</Typography>} secondary={log.time} />
-                </ListItem>
-              ))}
-            </List>
+            <Box display="flex" justifyContent="center" alignItems="center" height={280}>
+              <Chart options={userStatusConfig.options} series={userStatusConfig.series} type="donut" width="100%" />
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            <Stack spacing={2}>
+              <Typography variant="caption" color="text.secondary" textAlign="center">
+                Refining marketing spend based on active browsing count (10) vs conversion count (1).
+              </Typography>
+            </Stack>
+          </Paper>
+        </Grid>
+
+        {/* STORE PERFORMANCE TABLE */}
+        <Grid size={{ xs: 12 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, border: '1px solid #e2e8f0' }}>
+            <Typography variant="h6" fontWeight={700} mb={3}>
+              Branch Performance Benchmarking
+            </Typography>
+            <Box sx={{ width: '100%', height: 400 }}>
+              <DataGrid
+                rows={storeRows}
+                columns={storeColumns}
+                pageSize={5}
+                rowsPerPageOptions={[5]}
+                disableRowSelectionOnClick
+                sx={{
+                  border: 'none',
+                  '& .MuiDataGrid-columnHeaders': { bgcolor: '#f1f5f9', borderRadius: 2 },
+                  '& .MuiDataGrid-cell:focus': { outline: 'none' }
+                }}
+              />
+            </Box>
           </Paper>
         </Grid>
       </Grid>
-
-      {/* Pulse Animations */}
-      <style>
-        {`
-                    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(238, 93, 80, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(238, 93, 80, 0); } 100% { box-shadow: 0 0 0 0 rgba(238, 93, 80, 0); } }
-                    @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(5, 205, 153, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(5, 205, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(5, 205, 153, 0); } }
-                    .pulse-red { animation: pulse-red 2s infinite; }
-                    .pulse-green { animation: pulse-green 2s infinite; }
-                `}
-      </style>
     </Box>
   );
 };
+
+/* --- ENHANCED KPI CARD COMPONENT --- */
+const KpiCard = ({ title, value, icon, color }) => (
+  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+    <motion.div whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 4, position: 'relative', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Stack>
+            <Typography variant="caption" fontWeight={600} color="text.secondary" textTransform="uppercase" letterSpacing={1}>
+              {title}
+            </Typography>
+            <Typography variant="h4" fontWeight={800} sx={{ mt: 1, color: '#1e293b' }}>
+              {value}
+            </Typography>
+          </Stack>
+          <Avatar sx={{ bgcolor: `${color}15`, color: color, width: 48, height: 48, borderRadius: 3 }}>{icon}</Avatar>
+        </Box>
+        <Box sx={{ position: 'absolute', bottom: 0, left: 0, width: '4px', height: '100%', bgcolor: color }} />
+      </Paper>
+    </motion.div>
+  </Grid>
+);
 
 export default Dashboard;

@@ -27,14 +27,18 @@ const ProfileIndex = () => {
 
   // Get Admin data from Redux state
   const { Admin, isLoading } = useSelector((state) => state.admin);
+
+  
+  console.log('Admin', Admin);
+
   //   const { notifications } = useSelector((state) => state.notifications);
 
   const { notifications, isNotificationLoading } = useSelector((state) => state.notifications);
   console.log('notifications', notifications);
 
   // useEffect(() => {
-    // dispatch(getNotifications());
-    // dispatch(clearBadge()); // Reset the bell icon badge when viewing this screen
+  // dispatch(getNotifications());
+  // dispatch(clearBadge()); // Reset the bell icon badge when viewing this screen
   // }, [dispatch]);
 
   //   console.log('Admin in profile ', Admin);

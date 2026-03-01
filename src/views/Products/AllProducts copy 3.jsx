@@ -9,70 +9,109 @@ import {
   useTheme,
   Chip,
   Tooltip,
-  CircularProgress,
-  Alert,
   Container,
   TextField,
   MenuItem,
   IconButton,
   Button,
-  Fade
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { DataGrid, GridToolbarContainer, GridToolbarExport } from '@mui/x-data-grid';
 import {
   Inventory2TwoTone as ProductIcon,
   AutoAwesomeTwoTone as FeaturedIcon,
-  WhatshotTwoTone as BestsellerIcon,
-  FiberNewTwoTone as NewIcon,
   LayersTwoTone as StockIcon,
   EditTwoTone as EditIcon,
   DeleteTwoTone as DeleteIcon,
   AddRounded as AddIcon,
-  SearchRounded as SearchIcon
+  SearchRounded as SearchIcon,
+  RestartAltRounded as ResetIcon,
+  ImageNotSupportedTwoTone as NoImageIcon,
+  WarningAmberRounded as WarningIcon
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts } from '../../redux/features/Products/ProductSlice';
+import {
+  fetchProducts,
+  fetchCategoriesList
+  // deleteProduct
+} from '../../redux/features/Products/ProductSlice';
 import ProductModal from './ProductModal';
 
-// Custom Toolbar for a Pro look
 const CustomToolbar = () => (
-  <GridToolbarContainer sx={{ p: 2, borderBottom: '1px solid #f0f0f0' }}>
-    <GridToolbarExport />
+  <GridToolbarContainer sx={{ p: 2, justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0' }}>
+    <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
+      PRODUCT INVENTORY
+    </Typography>
+    <GridToolbarExport sx={{ borderRadius: '8px', fontWeight: 700 }} />
   </GridToolbarContainer>
+);
+
+const KPICard = ({ title, value, icon, color }) => (
+  <Paper sx={{ p: 2.5, flex: 1, borderRadius: '20px', display: 'flex', alignItems: 'center', border: '1px solid #E2E8F0' }}>
+    <Avatar sx={{ bgcolor: alpha(color, 0.1), color, width: 52, height: 52, mr: 2 }}>{icon}</Avatar>
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ textTransform: 'uppercase' }}>
+        {title}
+      </Typography>
+      <Typography variant="h4" fontWeight={900}>
+        {value}
+      </Typography>
+    </Box>
+  </Paper>
 );
 
 const AllProducts = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
+  const { products = [], categoriesList = [], isProductLoading } = useSelector((state) => state.product);
 
-  const { products = [], isProductLoading, isProductError, message } = useSelector((state) => state.product);
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+
+  useEffect(() => {
+    dispatch(fetchCategoriesList());
+  }, [dispatch]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       dispatch(fetchProducts({ category, search }));
-    }, 500); // Debounce search to save API hits
+    }, 500);
     return () => clearTimeout(delayDebounceFn);
   }, [dispatch, category, search]);
+
+  const handleResetFilters = () => {
+    setCategory('');
+    setSearch('');
+  };
+
+  const handleDeleteClick = (product) => {
+    setProductToDelete(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (productToDelete) {
+      // dispatch(deleteProduct(productToDelete._id));
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
+    }
+  };
 
   const rows = useMemo(
     () =>
       products.map((p, index) => ({
+        ...p,
         id: p._id,
         sl: index + 1,
-        name: p.name || 'Unnamed Product',
-        brand: p.brand || 'Generic',
-        category: p.category || 'Uncategorized',
-        price: p.sellingPrice || 0,
-        mrp: p.mrp || 0,
-        discount: p.discountPercentage || 0,
         stock: p.overallStock ?? 0,
-        isFeatured: !!p.isFeatured,
-        isBestSeller: !!p.isBestSeller,
-        isNewArrival: !!p.isNewArrival
+        displayImage: p.images?.length > 0 ? p.images[0].url : null // Use the URL
       })),
     [products]
   );
@@ -81,55 +120,70 @@ const AllProducts = () => {
     () => ({
       total: rows.length,
       featured: rows.filter((r) => r.isFeatured).length,
-      lowStock: rows.filter((r) => r.stock < 5).length
+      lowStock: rows.filter((r) => r.stock < 5 && r.stock > 0).length
     }),
     [rows]
   );
 
   const columns = [
-    { field: 'sl', headerName: '#', width: 50, sortable: false },
+    { field: 'sl', headerName: '#', width: 60, align: 'center' },
+    {
+      field: 'displayImage',
+      headerName: 'Img',
+      width: 80,
+      sortable: false,
+      renderCell: (params) => (
+        <Avatar
+          src={params.value || undefined}
+          variant="rounded"
+          sx={{
+            width: 48,
+            height: 48,
+            bgcolor: '#f1f5f9',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            mt: 1
+          }}
+        >
+          {!params.value && <NoImageIcon sx={{ fontSize: 20, color: 'text.disabled' }} />}
+        </Avatar>
+      )
+    },
     {
       field: 'name',
       headerName: 'Product Details',
       flex: 2,
       renderCell: (params) => (
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ py: 1 }}>
-          <Avatar
-            variant="rounded"
-            sx={{
-              width: 42,
-              height: 42,
-              bgcolor: alpha(theme.palette.primary.main, 0.08),
-              color: theme.palette.primary.main,
-              fontSize: '1rem',
-              fontWeight: 'bold'
-            }}
-          >
-            {params.value.charAt(0)}
-          </Avatar>
-          <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant="body2" fontWeight={600} noWrap color="text.primary">
-              {params.value}
+        <Box sx={{ py: 1.5 }}>
+          <Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#1E293B', lineHeight: 1.2 }}>
+            {params.value}
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="caption" sx={{ color: theme.palette.primary.main, fontWeight: 600 }}>
+              {params.row.sku}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              {params.row.brand} • {params.row.category}
+            <Typography variant="caption" color="text.disabled">
+              |
             </Typography>
-          </Box>
-        </Stack>
+            <Typography variant="caption" color="text.secondary">
+              {params.row.brand}
+            </Typography>
+          </Stack>
+        </Box>
       )
     },
     {
       field: 'price',
       headerName: 'Pricing',
-      flex: 1,
+      width: 140,
       renderCell: (params) => (
         <Box>
-          <Typography variant="body2" fontWeight={700}>
-            ₹{params.value.toLocaleString('en-IN')}
+          <Typography variant="body2" fontWeight={800} color="success.main">
+            ₹{params.row.sellingPrice?.toLocaleString('en-IN')}
           </Typography>
-          {params.row.discount > 0 && (
+          {params.row.mrp > params.row.sellingPrice && (
             <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
-              ₹{params.row.mrp.toLocaleString('en-IN')}
+              ₹{params.row.mrp?.toLocaleString('en-IN')}
             </Typography>
           )}
         </Box>
@@ -138,16 +192,16 @@ const AllProducts = () => {
     {
       field: 'stock',
       headerName: 'Inventory',
-      flex: 1,
+      width: 150,
       renderCell: (params) => {
-        const isLow = params.value < 5;
+        const isOut = params.value === 0;
+        const isLow = params.value < 5 && !isOut;
         return (
           <Chip
-            label={params.value === 0 ? 'Out of Stock' : `${params.value} Units`}
+            label={isOut ? 'Sold Out' : isLow ? `Low: ${params.value}` : `${params.value} Units`}
             size="small"
-            variant="outlined"
-            color={params.value === 0 ? 'error' : isLow ? 'warning' : 'success'}
-            sx={{ fontWeight: 600, borderRadius: '6px' }}
+            color={isOut ? 'error' : isLow ? 'warning' : 'success'}
+            sx={{ fontWeight: 800, borderRadius: '6px', minWidth: '90px' }}
           />
         );
       }
@@ -155,7 +209,7 @@ const AllProducts = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 120,
+      width: 100,
       sortable: false,
       renderCell: (params) => (
         <Stack direction="row" spacing={0.5}>
@@ -167,13 +221,12 @@ const AllProducts = () => {
                 setShowModal(true);
               }}
             >
-              <EditIcon fontSize="small" color="action" />
+              <EditIcon fontSize="small" color="primary" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">
-            {/* <IconButton size="small" onClick={() => dispatch(deleteProduct(params.row.id))}> */}
-            <IconButton size="small">
-              <DeleteIcon fontSize="small" sx={{ color: theme.palette.error.light }} />
+            <IconButton size="small" onClick={() => handleDeleteClick(params.row)}>
+              <DeleteIcon fontSize="small" sx={{ color: 'error.light' }} />
             </IconButton>
           </Tooltip>
         </Stack>
@@ -182,16 +235,15 @@ const AllProducts = () => {
   ];
 
   return (
-    <Box sx={{ bgcolor: '#f8f9fa', minHeight: '100vh', pb: 5 }}>
+    <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', pb: 8 }}>
       <Container maxWidth="xl">
-        {/* Header Section */}
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ py: 4 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 4 }}>
           <Box>
-            <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.5px' }}>
-              Inventory Dashboard
+            <Typography variant="h4" fontWeight={900} sx={{ color: '#1E293B', letterSpacing: '-0.5px' }}>
+              Catalog Manager
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Managing {stats.total} products across 4 categories
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+              Control your products, inventory levels, and visibility.
             </Typography>
           </Box>
           <Button
@@ -201,29 +253,30 @@ const AllProducts = () => {
               setSelectedProduct(null);
               setShowModal(true);
             }}
-            sx={{ borderRadius: '12px', px: 3, py: 1.2, boxShadow: theme.shadows[4] }}
+            sx={{ borderRadius: '12px', px: 4, py: 1.2, fontWeight: 700, textTransform: 'none', boxShadow: 3 }}
           >
-            New Product
+            Create Product
           </Button>
         </Stack>
 
-        {/* Stats Row */}
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
-          <KPICard title="Live Catalog" value={stats.total} icon={<ProductIcon />} color={theme.palette.primary.main} />
+          <KPICard title="Total Products" value={stats.total} icon={<ProductIcon />} color={theme.palette.primary.main} />
           <KPICard title="Featured Items" value={stats.featured} icon={<FeaturedIcon />} color="#ed6c02" />
-          <KPICard title="Critical Stock" value={stats.lowStock} icon={<StockIcon />} color="#d32f2f" />
+          <KPICard title="Low Stock" value={stats.lowStock} icon={<StockIcon />} color="#d32f2f" />
         </Stack>
 
-        {/* Filter Bar */}
-        <Paper sx={{ p: 2, mb: 3, borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+        <Paper sx={{ p: 2, mb: 3, borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: 'none' }}>
           <Stack direction="row" spacing={2}>
             <TextField
-              placeholder="Search by name or SKU..."
+              placeholder="Search products..."
               fullWidth
               size="small"
-              InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.disabled' }} /> }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.disabled' }} />,
+                sx: { borderRadius: '10px', bgcolor: '#fff' }
+              }}
             />
             <TextField
               select
@@ -231,64 +284,71 @@ const AllProducts = () => {
               label="Category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              sx={{ minWidth: 180 }}
+              sx={{ minWidth: 200, '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#fff' } }}
             >
               <MenuItem value="">All Categories</MenuItem>
-              <MenuItem value="mobile">Mobile Devices</MenuItem>
-              <MenuItem value="laptop">Laptops & PC</MenuItem>
-              <MenuItem value="accessories">Accessories</MenuItem>
+              {categoriesList.map((item) => (
+                <MenuItem key={item.category} value={item.category}>
+                  {item.category.toUpperCase()}
+                </MenuItem>
+              ))}
             </TextField>
+            <IconButton onClick={handleResetFilters} sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: '10px' }}>
+              <ResetIcon color="primary" />
+            </IconButton>
           </Stack>
         </Paper>
 
-        {/* Data Grid */}
-        <Paper sx={{ borderRadius: '16px', overflow: 'hidden', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
+        <Paper sx={{ borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
           <DataGrid
             rows={rows}
             columns={columns}
             loading={isProductLoading}
             autoHeight
+            rowHeight={70}
+            disableRowSelectionOnClick
             pageSizeOptions={[10, 25]}
             initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
             slots={{ toolbar: CustomToolbar }}
-            disableRowSelectionOnClick
-            sx={{
-              border: 'none',
-              '& .MuiDataGrid-cell:focus': { outline: 'none' },
-              '& .MuiDataGrid-columnHeaders': { backgroundColor: '#fafafa', color: 'text.secondary', fontWeight: 700 }
-            }}
+            sx={{ border: 'none', '& .MuiDataGrid-columnHeaders': { bgcolor: '#F8FAFC' } }}
           />
         </Paper>
       </Container>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: '400px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontWeight: 800 }}>
+          <WarningIcon sx={{ color: 'error.main' }} />
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to delete <strong>{productToDelete?.name}</strong>? This action cannot be undone and will remove the
+            product from the store immediately.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ fontWeight: 700, color: 'text.secondary' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="error"
+            sx={{ borderRadius: '10px', fontWeight: 700, textTransform: 'none' }}
+          >
+            Delete Product
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {showModal && <ProductModal product={selectedProduct} onClose={() => setShowModal(false)} />}
     </Box>
   );
 };
-
-// Sub-component for KPI
-const KPICard = ({ title, value, icon, color }) => (
-  <Paper
-    sx={{
-      p: 3,
-      flex: 1,
-      borderRadius: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      background: `linear-gradient(135deg, #fff 0%, ${alpha(color, 0.02)} 100%)`,
-      border: `1px solid ${alpha(color, 0.1)}`
-    }}
-  >
-    <Avatar sx={{ bgcolor: alpha(color, 0.1), color, width: 56, height: 56, mr: 2 }}>{icon}</Avatar>
-    <Box>
-      <Typography variant="overline" color="text.secondary" fontWeight={700}>
-        {title}
-      </Typography>
-      <Typography variant="h4" fontWeight={800}>
-        {value}
-      </Typography>
-    </Box>
-  </Paper>
-);
 
 export default AllProducts;

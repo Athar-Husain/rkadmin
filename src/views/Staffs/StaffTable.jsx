@@ -1,100 +1,143 @@
 import { useMemo, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Chip, FormControl, InputLabel, MenuItem, Select, Skeleton } from '@mui/material';
+import { Box, Chip, FormControl, InputLabel, MenuItem, Select, Avatar, Typography, Stack, alpha } from '@mui/material';
 
 const StaffTable = ({ staffList = [], onSelect, isLoading = false }) => {
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [roleFilter, setRoleFilter] = useState('ALL');
-
-  const filteredStaff = useMemo(() => {
-    if (!Array.isArray(staffList)) return [];
-    return staffList.filter((s) => {
-      if (statusFilter !== 'ALL') {
-        if (statusFilter === 'ACTIVE' && !s.isActive) return false;
-        if (statusFilter === 'INACTIVE' && s.isActive) return false;
-      }
-      if (roleFilter !== 'ALL' && s.role !== roleFilter) return false;
-      return true;
-    });
-  }, [staffList, statusFilter, roleFilter]);
 
   const rows = useMemo(
     () =>
-      filteredStaff.map((s) => ({
+      staffList.map((s) => ({
         id: s._id,
-        name: s.name || [s.firstName, s.lastName].filter(Boolean).join(' ') || '—',
-        username: s.username || s.email || '—',
-        role: s.role || '—',
-        status: s.isActive ? 'Active' : 'Inactive',
-        lastLogin: s.lastLogin ? new Date(s.lastLogin).toLocaleString() : 'Never'
+        name: s.name,
+        email: s.email,
+        role: s.role,
+        isActive: s.isActive,
+        lastLogin: s.lastLogin
       })),
-    [filteredStaff]
+    [staffList]
   );
 
-  const columns = useMemo(
-    () => [
-      { field: 'name', headerName: 'Name', flex: 1 },
-      { field: 'username', headerName: 'Username', flex: 1 },
-      { field: 'role', headerName: 'Role', width: 120 },
-      {
-        field: 'status',
-        headerName: 'Status',
-        width: 120,
-        renderCell: (params) => <Chip label={params.value} color={params.value === 'Active' ? 'success' : 'error'} size="small" />
-      },
-      { field: 'lastLogin', headerName: 'Last Login', flex: 1 }
-    ],
-    []
-  );
+  const columns = [
+    // {
+    //   field: 'name',
+    //   headerName: 'Team Member',
+    //   flex: 1.5,
+    //   renderCell: (params) => (
+    //     <Stack direction="row" spacing={2} alignItems="center" sx={{ height: '100%' }}>
+    //       <Avatar sx={{ bgcolor: alpha('#2563EB', 0.1), color: '#2563EB', fontWeight: 700, fontSize: '0.8rem' }}>
+    //         {params.value
+    //           ?.split(' ')
+    //           .map((n) => n[0])
+    //           .join('')}
+    //       </Avatar>
+    //       <Box>
+    //         <Typography variant="body2" fontWeight={700} sx={{ color: '#1E293B' }}>
+    //           {params.value}
+    //         </Typography>
+    //         <Typography variant="caption" color="text.secondary">
+    //           {params.row.email}
+    //         </Typography>
+    //       </Box>
+    //     </Stack>
+    //   )
+    // },
+    {
+      field: 'name',
+      headerName: 'Team Member',
+      flex: 1.5,
+      sortable: false,
+      renderCell: (params) => {
+        const initials = params.value
+          ?.split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase();
 
-  if (isLoading) {
-    return (
-      <Box>
-        {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} variant="rectangular" height={50} sx={{ mb: 1, borderRadius: 1 }} />
-        ))}
-      </Box>
-    );
-  }
+        return (
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ height: '100%', py: 1 }}>
+            <Avatar
+              sx={{
+                bgcolor: alpha('#2563EB', 0.1),
+                color: '#2563EB',
+                width: 40,
+                height: 40,
+                fontWeight: 700,
+                fontSize: '0.9rem'
+              }}
+            >
+              {initials}
+            </Avatar>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                sx={{ color: '#1E293B', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
+              >
+                {params.value}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
+              >
+                {params.row.email || 'No Email'}
+              </Typography>
+            </Box>
+          </Stack>
+        );
+      }
+    },
+    {
+      field: 'role',
+      headerName: 'Role',
+      flex: 1,
+      renderCell: (params) => (
+        <Chip label={params.value} size="small" variant="outlined" sx={{ fontWeight: 600, textTransform: 'capitalize' }} />
+      )
+    },
+    {
+      field: 'isActive',
+      headerName: 'Status',
+      width: 130,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ height: '100%' }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: params.value ? '#10B981' : '#CBD5E1' }} />
+          <Typography variant="body2" fontWeight={600} color={params.value ? '#10B981' : '#64748B'}>
+            {params.value ? 'Active' : 'Offline'}
+          </Typography>
+        </Stack>
+      )
+    },
+    {
+      field: 'lastLogin',
+      headerName: 'Last Session',
+      flex: 1,
+      valueFormatter: (params) => (params ? new Date(params).toLocaleDateString() : '—')
+    }
+  ];
 
   return (
-    <>
-      {/* Filters */}
-      <Box display="flex" gap={2} mb={2}>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Status</InputLabel>
-          <Select value={statusFilter} label="Status" onChange={(e) => setStatusFilter(e.target.value)}>
-            <MenuItem value="ALL">All</MenuItem>
-            <MenuItem value="ACTIVE">Active</MenuItem>
-            <MenuItem value="INACTIVE">Inactive</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Role</InputLabel>
-          <Select value={roleFilter} label="Role" onChange={(e) => setRoleFilter(e.target.value)}>
-            <MenuItem value="ALL">All</MenuItem>
-            <MenuItem value="staff">Staff</MenuItem>
-            <MenuItem value="manager">Manager</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
-
+    <Box sx={{ height: 500, width: '100%' }}>
       <DataGrid
         rows={rows}
         columns={columns}
-        autoHeight
-        pageSizeOptions={[10, 25, 50]}
+        loading={isLoading}
         disableRowSelectionOnClick
         onRowClick={(params) => onSelect?.(params.id)}
         sx={{
-          '& .MuiDataGrid-row:hover': {
-            backgroundColor: 'rgba(25, 118, 210, 0.08)',
-            cursor: 'pointer'
-          }
+          border: 'none',
+          '& .MuiDataGrid-columnHeaders': {
+            bgcolor: '#F8FAFC',
+            color: '#64748B',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            fontSize: '0.7rem'
+          },
+          '& .MuiDataGrid-cell:focus': { outline: 'none' }
         }}
       />
-    </>
+    </Box>
   );
 };
 

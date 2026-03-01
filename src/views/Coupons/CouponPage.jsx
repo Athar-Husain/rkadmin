@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Container,
   Stack,
@@ -12,18 +12,18 @@ import {
   Avatar,
   Dialog,
   DialogTitle,
-  DialogContent
+  DialogContent,
+  Grid
 } from '@mui/material';
 import {
   AddRounded as AddIcon,
   ConfirmationNumberTwoTone as CouponIcon,
-  HistoryTwoTone as HistoryIcon,
   CloseRounded as CloseIcon,
-  TrendingUpTwoTone as AnalyticsIcon,
-  EventAvailableTwoTone as ActiveIcon
+  AutoGraphTwoTone as AnalyticsIcon,
+  FlashOnTwoTone as ActiveIcon
 } from '@mui/icons-material';
-import CouponList from './CouponList';
 import { useDispatch, useSelector } from 'react-redux';
+import CouponList from './CouponList';
 import CouponForm from './CouponForm';
 import RedemptionHistoryTable from './RedemptionHistoryTable';
 import CreateCouponDialog from './CreateCouponDialog';
@@ -32,24 +32,28 @@ import { fetchAllCouponsAdmin } from '../../redux/features/Coupons/CouponSlice';
 const CouponsPage = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { coupons, loading } = useSelector((state) => state.coupon);
 
-//   console.log('coupons', coupons);
+  // Destructure with default empty array to prevent map/filter errors
+  const { coupons = [], loading } = useSelector((state) => state.coupon);
 
   const [selectedCoupon, setSelectedCoupon] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const handleEdit = (coupon) => {
-    setSelectedCoupon(coupon);
-    setIsFormOpen(true);
-  };
+  // Dynamic KPI Calculations with Optional Chaining
+  const stats = useMemo(() => {
+    if (!Array.isArray(coupons)) return { active: 0, totalRedeemed: 0 };
 
-  const handleViewHistory = (coupon) => {
-    setSelectedCoupon(coupon);
-    setIsHistoryOpen(true);
-  };
+    const active = coupons.filter((c) => c?.status === 'ACTIVE').length;
+    const totalRedeemed = coupons.reduce((acc, curr) => acc + (curr?.currentRedemptions || 0), 0);
+
+    return { active, totalRedeemed };
+  }, [coupons]);
+
+  useEffect(() => {
+    dispatch(fetchAllCouponsAdmin());
+  }, [dispatch]);
 
   const handleClose = () => {
     setSelectedCoupon(null);
@@ -57,109 +61,120 @@ const CouponsPage = () => {
     setIsHistoryOpen(false);
   };
 
-  // Fetch all coupons on component mount
-  useEffect(() => {
-    dispatch(fetchAllCouponsAdmin());
-  }, [dispatch]);
-
   return (
-    <Box sx={{ bgcolor: '#F4F7FA', minHeight: '100vh', pb: 8 }}>
-      <Container maxWidth="xl">
-        {/* Header Section */}
-        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" sx={{ py: 4 }} spacing={2}>
+    <Box
+      sx={{
+        bgcolor: '#F8FAFC',
+        minHeight: '100vh',
+        background: `radial-gradient(at 0% 0%, ${alpha(theme.palette.primary.main, 0.05)} 0, transparent 50%)`
+      }}
+    >
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        {/* Modern Header */}
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="flex-start" spacing={3} sx={{ mb: 6 }}>
           <Box>
-            <Typography variant="h4" fontWeight={900} sx={{ color: '#1A2027', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <CouponIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+            <Typography variant="h4" fontWeight={900} sx={{ color: '#0F172A', letterSpacing: '-0.02em', mb: 1 }}>
               Marketing Hub
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Configure discounts, track redemptions, and manage promotional campaigns.
+            <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+              Monitor performance and manage high-conversion discount campaigns.
             </Typography>
           </Box>
           <Button
             variant="contained"
+            disableElevation
             startIcon={<AddIcon />}
             onClick={() => setIsCreateDialogOpen(true)}
             sx={{
-              borderRadius: '12px',
+              borderRadius: '14px',
               px: 4,
-              py: 1.2,
+              py: 1.5,
               textTransform: 'none',
-              fontWeight: 800,
-              boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.24)}`
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              '&:hover': { transform: 'translateY(-2px)', transition: 'all 0.2s' }
             }}
           >
             Create New Coupon
           </Button>
         </Stack>
 
-        {/* KPI Stats Section */}
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
-          <KPICard title="Total Coupons" value={coupons?.length || 0} icon={<CouponIcon />} color={theme.palette.primary.main} />
-          <KPICard title="Active Now" value={12} icon={<ActiveIcon />} color="#2e7d32" />
-          <KPICard title="Total Savings" value="₹45.2k" icon={<AnalyticsIcon />} color="#ed6c02" />
-        </Stack>
+        {/* KPI Section */}
+        <Grid container spacing={3} sx={{ mb: 6 }}>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <KPICard title="Total Campaigns" value={coupons?.length || 0} icon={<CouponIcon />} color="#6366F1" />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <KPICard title="Live Now" value={stats.active} icon={<ActiveIcon />} color="#10B981" />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <KPICard title="Total Redemptions" value={stats.totalRedeemed} icon={<AnalyticsIcon />} color="#F59E0B" />
+          </Grid>
+        </Grid>
 
-        {/* Main List Section */}
+        {/* Main List Table Container */}
         <Paper
+          elevation={0}
           sx={{
             borderRadius: '24px',
-            overflow: 'hidden',
-            border: '1px solid #E0E4E8',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-            bgcolor: '#fff'
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(8px)',
+            overflow: 'hidden'
           }}
         >
-          <Box sx={{ p: 3, borderBottom: '1px solid #F1F5F9' }}>
-            <Typography variant="subtitle1" fontWeight={800}>
-              Live Offers & Discounts
+          <Box sx={{ p: 3, borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6" fontWeight={800} color="#1E293B">
+              Active Promotions
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ bgcolor: '#F1F5F9', px: 1.5, py: 0.5, borderRadius: '20px', fontWeight: 700, color: '#64748B' }}
+            >
+              {loading ? 'Updating...' : 'Real-time data'}
             </Typography>
           </Box>
-          <CouponList onEdit={handleEdit} onViewHistory={handleViewHistory} coupons={coupons} loading={loading} />
+          <CouponList
+            onEdit={(c) => {
+              setSelectedCoupon(c);
+              setIsFormOpen(true);
+            }}
+            onViewHistory={(c) => {
+              setSelectedCoupon(c);
+              setIsHistoryOpen(true);
+            }}
+          />
         </Paper>
 
-        {/* Coupon Form Modal */}
+        {/* Unified Dialog Styling */}
         <Dialog
-          open={isFormOpen}
+          open={isHistoryOpen || isFormOpen}
           onClose={handleClose}
           fullWidth
-          maxWidth="md"
-          PaperProps={{ sx: { borderRadius: '24px', boxShadow: theme.shadows[10] } }}
+          maxWidth={isHistoryOpen ? 'lg' : 'md'}
+          PaperProps={{ sx: { borderRadius: '28px', p: 1 } }}
         >
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3 }}>
-            <Typography variant="h6" fontWeight={800}>
-              {selectedCoupon?._id ? 'Modify Campaign' : 'New Discount Campaign'}
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" fontWeight={900}>
+              {isHistoryOpen ? 'Redemption Analytics' : 'Campaign Details'}
             </Typography>
-            <IconButton onClick={handleClose} size="small" sx={{ bgcolor: '#F8FAFC' }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers sx={{ p: 4, borderTop: '1px solid #F1F5F9' }}>
-            <CouponForm initialData={selectedCoupon || {}} onClose={handleClose} />
-          </DialogContent>
-        </Dialog>
-
-        {/* Redemption History Modal */}
-        <Dialog open={isHistoryOpen} onClose={handleClose} fullWidth maxWidth="lg" PaperProps={{ sx: { borderRadius: '24px' } }}>
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, bgcolor: '#F8FAFC' }}>
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              <Box sx={{ bgcolor: 'secondary.main', color: '#fff', p: 1, borderRadius: '10px', display: 'flex' }}>
-                <HistoryIcon fontSize="small" />
-              </Box>
-              <Typography variant="h6" fontWeight={800}>
-                Redemption Analytics
-              </Typography>
-            </Stack>
-            <IconButton onClick={handleClose}>
+            <IconButton onClick={handleClose} sx={{ bgcolor: '#F8FAFC' }}>
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          <DialogContent sx={{ p: 0 }}>
-            <RedemptionHistoryTable couponId={selectedCoupon?._id} />
+          <DialogContent sx={{ p: isHistoryOpen ? 0 : 3 }}>
+            {isHistoryOpen ? (
+              <RedemptionHistoryTable couponId={selectedCoupon?._id} />
+            ) : (
+              <CouponForm initialData={selectedCoupon || {}} onClose={handleClose} />
+            )}
           </DialogContent>
         </Dialog>
       </Container>
 
+      {/* Create Coupon Logic */}
       <CreateCouponDialog
         open={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
@@ -169,33 +184,31 @@ const CouponsPage = () => {
   );
 };
 
-/**
- * Reusable KPI Card Component
- */
+// Extracted KPI Component for better readability
 const KPICard = ({ title, value, icon, color }) => (
   <Paper
     sx={{
-      p: 2.5,
-      flex: 1,
-      borderRadius: '20px',
+      p: 3,
+      borderRadius: '24px',
       display: 'flex',
       alignItems: 'center',
-      border: '1px solid',
-      borderColor: alpha(color, 0.1),
-      bgcolor: '#fff',
-      transition: 'transform 0.2s',
-      '&:hover': { transform: 'translateY(-4px)' }
+      border: '1px solid #F1F5F9',
+      transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
+      '&:hover': {
+        transform: 'translateY(-5px)',
+        boxShadow: `0 20px 25px -5px ${alpha(color, 0.1)}`
+      }
     }}
   >
-    <Avatar sx={{ bgcolor: alpha(color, 0.1), color, width: 54, height: 54, mr: 2, borderRadius: '14px' }}>
-      {React.cloneElement(icon, { sx: { fontSize: 28 } })}
+    <Avatar sx={{ bgcolor: alpha(color, 0.1), color, width: 60, height: 60, mr: 2.5, borderRadius: '18px' }}>
+      {React.cloneElement(icon, { sx: { fontSize: 32 } })}
     </Avatar>
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+      <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5 }}>
         {title}
       </Typography>
-      <Typography variant="h5" fontWeight={900}>
-        {value}
+      <Typography variant="h4" fontWeight={900} sx={{ color: '#0F172A' }}>
+        {typeof value === 'number' ? value.toLocaleString() : value}
       </Typography>
     </Box>
   </Paper>

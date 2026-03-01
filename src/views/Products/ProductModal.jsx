@@ -11,26 +11,26 @@ import {
   Switch,
   Grid,
   Typography,
-  Divider,
   IconButton,
   Box,
   Autocomplete,
   InputAdornment,
-  alpha,
-  useTheme
+  Paper,
+  useTheme,
+  Divider
 } from '@mui/material';
 import {
   CloseRounded as CloseIcon,
-  InfoRounded as InfoIcon,
-  LocalOfferTwoTone as PriceIcon,
-  CategoryTwoTone as CatIcon,
-  DescriptionTwoTone as DescIcon
+  AddPhotoAlternateTwoTone as AddImageIcon,
+  DeleteOutlineRounded as RemoveImageIcon,
+  Inventory2TwoTone as SkuIcon,
+  BusinessTwoTone as BrandIcon,
+  AutoFixHighTwoTone as EditIcon
 } from '@mui/icons-material';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { addProduct, updateProduct } from '../../redux/features/Products/ProductSlice';
 
-// Helper: formats string to "mob-dhi" format
 const formatSlug = (text) => {
   if (typeof text !== 'string') return '';
   return text
@@ -51,113 +51,208 @@ const ProductModal = ({ product, onClose }) => {
     handleSubmit,
     reset,
     watch,
-    formState: { errors, isDirty }
+    formState: { errors }
   } = useForm({
     defaultValues: {
       name: '',
       brand: '',
       category: '',
       subcategory: '',
-      model: '',
       sku: '',
+      model: '',
       mrp: 0,
       sellingPrice: 0,
       overallStock: 0,
+      description: '',
+      images: [''], // We will handle conversion from Object to String here
       isFeatured: false,
       isBestSeller: false,
       isNewArrival: false,
-      description: ''
+      isActive: true
     }
   });
 
+  const { fields, append, remove } = useFieldArray({ control, name: 'images' });
+  const watchedImages = watch('images');
   const watchedCategory = watch('category');
-  const watchedMRP = watch('mrp');
-  const watchedPrice = watch('sellingPrice');
 
+  // Sync Product Data to Form
   useEffect(() => {
-    if (isEdit && product) reset({ ...product });
+    if (isEdit && product) {
+      reset({
+        ...product,
+        // Extract URLs from the image objects array for the form fields
+        images: product.images?.length > 0 ? product.images.map((img) => (typeof img === 'string' ? img : img.url)) : [''],
+        mrp: product.mrp || 0,
+        sellingPrice: product.sellingPrice || 0
+      });
+    }
   }, [product, isEdit, reset]);
 
   const onSubmit = (data) => {
+    // Transform string URLs back into the Object format expected by your Backend/JSON
+    const formattedImages = data.images
+      .filter((url) => url && url.trim() !== '')
+      .map((url, index) => ({
+        url: url,
+        alt: data.name,
+        isPrimary: index === 0
+      }));
+
     const payload = {
       ...data,
+      images: formattedImages,
       sku: data.sku.toUpperCase(),
-      category: formatSlug(data.category),
-      subcategory: formatSlug(data.subcategory),
       mrp: Number(data.mrp),
       sellingPrice: Number(data.sellingPrice),
-      overallStock: Number(data.overallStock)
+      overallStock: Number(data.overallStock),
+      slug: isEdit ? product.slug : formatSlug(`${data.brand}-${data.model}-${data.sku}`)
     };
 
     if (isEdit) {
-      dispatch(updateProduct({ id: product._id, data: payload }));
+      dispatch(updateProduct({ id: product._id || product.id, data: payload }));
     } else {
       dispatch(addProduct(payload));
     }
     onClose();
   };
 
-  // Extract relevant subcategories for the dropdown
   const subcategorySuggestions = React.useMemo(() => {
-    const match = categoriesList.find((c) => c.category === watchedCategory);
+    const match = categoriesList?.find((c) => c.category === watchedCategory);
     return match ? match.subcategories : [];
   }, [watchedCategory, categoriesList]);
 
   return (
-    <Dialog open onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: '24px' } }}>
+    <Dialog open onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: '20px', boxShadow: theme.shadows[10] } }}>
       <DialogTitle sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F8FAFC' }}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Box sx={{ bgcolor: 'primary.main', color: '#fff', p: 1, borderRadius: '10px', display: 'flex' }}>
-            <CatIcon fontSize="small" />
+          <Box sx={{ bgcolor: isEdit ? 'warning.main' : 'primary.main', color: '#fff', p: 1, borderRadius: '10px', display: 'flex' }}>
+            {isEdit ? <EditIcon fontSize="small" /> : <AddImageIcon fontSize="small" />}
           </Box>
           <Typography variant="h6" fontWeight={800}>
-            {isEdit ? 'Update Product' : 'Create New Product'}
+            {isEdit ? `Edit: ${product.name}` : 'Create New Product'}
           </Typography>
         </Stack>
-        <IconButton onClick={onClose} sx={{ bgcolor: '#fff' }} size="small">
-          <CloseIcon />
+        <IconButton onClick={onClose} size="small" sx={{ border: '1px solid #E2E8F0' }}>
+          <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent sx={{ p: 4 }}>
-          <Grid container spacing={4}>
-            {/* Left Column: Essential Details */}
-            <Grid size={{ xs: 12, md: 7 }}>
-              <Stack spacing={3}>
-                <Typography variant="overline" color="primary" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  General Information
-                </Typography>
+          <Grid container spacing={3}>
+            {/* 1. MEDIA PREVIEW & INPUTS */}
+            <Grid size={{ xs: 12 }}>
+              <Typography
+                variant="subtitle2"
+                color="primary"
+                fontWeight={700}
+                sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                Product Gallery
+              </Typography>
+              <Grid container spacing={2}>
+                {fields.map((item, index) => (
+                  <Grid size={{ xs: 12, md: 6 }} key={item.id}>
+                    <Stack direction="row" spacing={1}>
+                      <Controller
+                        name={`images.${index}`}
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            fullWidth
+                            size="small"
+                            label={index === 0 ? 'Primary Image URL' : `Gallery Image ${index + 1}`}
+                            placeholder="https://..."
+                          />
+                        )}
+                      />
+                      {fields.length > 1 && (
+                        <IconButton color="error" onClick={() => remove(index)}>
+                          <RemoveImageIcon />
+                        </IconButton>
+                      )}
+                    </Stack>
+                  </Grid>
+                ))}
+                <Grid size={{ xs: 12 }}>
+                  <Button size="small" variant="outlined" startIcon={<AddImageIcon />} onClick={() => append('')}>
+                    Add Image URL
+                  </Button>
+                </Grid>
+              </Grid>
 
+              {/* Live Preview Thumbnails */}
+              <Stack direction="row" spacing={2} sx={{ mt: 2, overflowX: 'auto', pb: 1 }}>
+                {watchedImages?.map(
+                  (url, i) =>
+                    url && (
+                      <Paper
+                        key={i}
+                        variant="outlined"
+                        sx={{ width: 60, height: 60, borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}
+                      >
+                        <Box component="img" src={url} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </Paper>
+                    )
+                )}
+              </Stack>
+            </Grid>
+
+            {/* 2. CORE DETAILS */}
+            <Grid size={{ xs: 12, md: 8 }}>
+              <Stack spacing={3}>
                 <Controller
                   name="name"
                   control={control}
-                  rules={{ required: 'Product name is required' }}
+                  rules={{ required: 'Name is required' }}
                   render={({ field }) => (
-                    <TextField {...field} label="Display Name" fullWidth error={!!errors.name} helperText={errors.name?.message} />
+                    <TextField {...field} label="Product Name" fullWidth error={!!errors.name} helperText={errors.name?.message} />
                   )}
                 />
 
                 <Stack direction="row" spacing={2}>
                   <Controller
-                    name="category"
+                    name="brand"
                     control={control}
-                    rules={{ required: 'Category is required' }}
                     render={({ field }) => (
-                      <Autocomplete
+                      <TextField
+                        {...field}
+                        label="Brand"
                         fullWidth
-                        freeSolo
-                        options={categoriesList.map((c) => c.category)}
-                        value={field.value}
-                        onInputChange={(e, val) => field.onChange(formatSlug(val))}
-                        onChange={(e, val) => field.onChange(formatSlug(val))}
-                        renderInput={(params) => (
-                          <TextField {...params} label="Category" error={!!errors.category} placeholder="e.g. mobile-phones" />
-                        )}
+                        InputProps={{ startAdornment: <BrandIcon sx={{ mr: 1, opacity: 0.5 }} /> }}
                       />
                     )}
                   />
+                  <Controller
+                    name="sku"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="SKU"
+                        fullWidth
+                        InputProps={{ startAdornment: <SkuIcon sx={{ mr: 1, opacity: 0.5 }} /> }}
+                      />
+                    )}
+                  />
+                </Stack>
 
+                <Stack direction="row" spacing={2}>
+                  <Controller
+                    name="category"
+                    control={control}
+                    render={({ field }) => (
+                      <Autocomplete
+                        fullWidth
+                        options={categoriesList?.map((c) => c.category) || []}
+                        value={field.value}
+                        onChange={(_, v) => field.onChange(v)}
+                        renderInput={(params) => <TextField {...params} label="Category" />}
+                      />
+                    )}
+                  />
                   <Controller
                     name="subcategory"
                     control={control}
@@ -167,156 +262,112 @@ const ProductModal = ({ product, onClose }) => {
                         freeSolo
                         options={subcategorySuggestions}
                         value={field.value}
-                        onInputChange={(e, val) => field.onChange(formatSlug(val))}
-                        onChange={(e, val) => field.onChange(formatSlug(val))}
-                        renderInput={(params) => <TextField {...params} label="Sub-Category" placeholder="e.g. android" />}
+                        onChange={(_, v) => field.onChange(v)}
+                        renderInput={(params) => <TextField {...params} label="Sub-Category" />}
                       />
                     )}
-                  />
-                </Stack>
-
-                <Stack direction="row" spacing={2}>
-                  <Controller
-                    name="brand"
-                    control={control}
-                    render={({ field }) => <TextField {...field} label="Brand" sx={{ flex: 1 }} />}
-                  />
-                  <Controller
-                    name="sku"
-                    control={control}
-                    render={({ field }) => <TextField {...field} label="SKU / Model" sx={{ flex: 1 }} />}
                   />
                 </Stack>
 
                 <Controller
                   name="description"
                   control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Product Description"
-                      multiline
-                      rows={4}
-                      fullWidth
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start" sx={{ mt: -5 }}>
-                            <DescIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
-                          </InputAdornment>
-                        )
-                      }}
-                    />
-                  )}
+                  render={({ field }) => <TextField {...field} label="Description" multiline rows={3} fullWidth />}
                 />
               </Stack>
             </Grid>
 
-            {/* Right Column: Inventory & Status */}
-            <Grid size={{ xs: 12, md: 5 }}>
-              <Stack spacing={3}>
-                <Box
-                  sx={{
-                    p: 3,
-                    bgcolor: alpha(theme.palette.primary.main, 0.03),
-                    borderRadius: '20px',
-                    border: '1px dashed',
-                    borderColor: 'divider'
-                  }}
-                >
-                  <Typography variant="overline" color="text.secondary" fontWeight={800} sx={{ mb: 2, display: 'block' }}>
-                    Pricing & Stock
+            {/* 3. PRICING & STATUS */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: '15px', bgcolor: '#F8FAFC' }}>
+                <Stack spacing={2}>
+                  <Typography variant="caption" fontWeight={800} color="text.secondary">
+                    PRICING & STOCK
                   </Typography>
+                  <Controller
+                    name="mrp"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="MRP"
+                        type="number"
+                        fullWidth
+                        InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="sellingPrice"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Selling Price"
+                        type="number"
+                        fullWidth
+                        InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="overallStock"
+                    control={control}
+                    render={({ field }) => <TextField {...field} label="Total Stock" type="number" fullWidth />}
+                  />
 
-                  <Stack spacing={2.5}>
-                    <Controller
-                      name="mrp"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          type="number"
-                          label="MRP"
-                          fullWidth
-                          InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-                        />
-                      )}
-                    />
-                    <Controller
-                      name="sellingPrice"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          type="number"
-                          label="Selling Price"
-                          fullWidth
-                          error={Number(watchedPrice) > Number(watchedMRP)}
-                          helperText={Number(watchedPrice) > Number(watchedMRP) ? 'Price exceeds MRP' : ''}
-                          InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-                        />
-                      )}
-                    />
-                    <Controller
-                      name="overallStock"
-                      control={control}
-                      render={({ field }) => <TextField {...field} type="number" label="Initial Stock Level" fullWidth />}
-                    />
-                  </Stack>
-                </Box>
+                  <Divider sx={{ my: 1 }} />
 
-                <Box sx={{ px: 2 }}>
-                  <Typography variant="overline" color="text.secondary" fontWeight={800} sx={{ mb: 1, display: 'block' }}>
-                    Visibility Tags
+                  <Typography variant="caption" fontWeight={800} color="text.secondary">
+                    VISIBILITY
                   </Typography>
-                  <Stack>
-                    <FormControlLabel
-                      control={
-                        <Controller
-                          name="isFeatured"
-                          control={control}
-                          render={({ field }) => <Switch {...field} checked={field.value} />}
-                        />
-                      }
-                      label={<Typography variant="body2">Featured Product</Typography>}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Controller
-                          name="isBestSeller"
-                          control={control}
-                          render={({ field }) => <Switch {...field} checked={field.value} color="error" />}
-                        />
-                      }
-                      label={<Typography variant="body2">Best Seller</Typography>}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Controller
-                          name="isNewArrival"
-                          control={control}
-                          render={({ field }) => <Switch {...field} checked={field.value} color="success" />}
-                        />
-                      }
-                      label={<Typography variant="body2">New Arrival</Typography>}
-                    />
-                  </Stack>
-                </Box>
-              </Stack>
+                  <FormControlLabel
+                    control={
+                      <Controller
+                        name="isFeatured"
+                        control={control}
+                        render={({ field }) => <Switch {...field} checked={field.value} size="small" />}
+                      />
+                    }
+                    label="Featured"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Controller
+                        name="isNewArrival"
+                        control={control}
+                        render={({ field }) => <Switch {...field} checked={field.value} color="success" size="small" />}
+                      />
+                    }
+                    label="New Arrival"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Controller
+                        name="isActive"
+                        control={control}
+                        render={({ field }) => <Switch {...field} checked={field.value} color="primary" size="small" />}
+                      />
+                    }
+                    label="Active Status"
+                  />
+                </Stack>
+              </Paper>
             </Grid>
           </Grid>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, bgcolor: '#F8FAFC', borderTop: '1px solid #E0E4E8' }}>
-          <Button onClick={onClose} variant="text" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+        <DialogActions sx={{ p: 3, bgcolor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+          <Button onClick={onClose} sx={{ color: 'text.secondary', fontWeight: 700 }}>
             Discard
           </Button>
           <Button
             type="submit"
             variant="contained"
-            disabled={!isDirty}
-            sx={{ px: 4, py: 1, borderRadius: '12px', fontWeight: 800, textTransform: 'none', boxShadow: theme.shadows[4] }}
+            color={isEdit ? 'warning' : 'primary'}
+            sx={{ px: 4, py: 1, borderRadius: '10px', fontWeight: 800 }}
           >
-            {isEdit ? 'Save Changes' : 'Confirm & Publish'}
+            {isEdit ? 'Save Changes' : 'Publish Product'}
           </Button>
         </DialogActions>
       </form>

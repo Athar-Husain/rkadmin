@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
-import StaffService from './StaffService';
+import { staffAPI } from '../../../utils/api';
 
 const initialState = {
   staffList: [],
@@ -26,7 +26,7 @@ const getErrorMessage = (error) =>
 // Public
 export const sendOTP = createAsyncThunk('staff/sendOTP', async (data, thunkAPI) => {
   try {
-    return await StaffService.sendOTP(data);
+    return await staffAPI.sendOTP(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -34,7 +34,7 @@ export const sendOTP = createAsyncThunk('staff/sendOTP', async (data, thunkAPI) 
 
 export const verifyOTP = createAsyncThunk('staff/verifyOTP', async (data, thunkAPI) => {
   try {
-    return await StaffService.verifyOTP(data);
+    return await staffAPI.verifyOTP(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -42,7 +42,7 @@ export const verifyOTP = createAsyncThunk('staff/verifyOTP', async (data, thunkA
 
 export const forgotPassword = createAsyncThunk('staff/forgotPassword', async (data, thunkAPI) => {
   try {
-    return await StaffService.forgotPassword(data);
+    return await staffAPI.forgotPassword(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -50,7 +50,7 @@ export const forgotPassword = createAsyncThunk('staff/forgotPassword', async (da
 
 export const resetPassword = createAsyncThunk('staff/resetPassword', async (data, thunkAPI) => {
   try {
-    return await StaffService.resetPassword(data);
+    return await staffAPI.resetPassword(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -58,7 +58,7 @@ export const resetPassword = createAsyncThunk('staff/resetPassword', async (data
 
 export const getLoginStatus = createAsyncThunk('staff/getLoginStatus', async (_, thunkAPI) => {
   try {
-    return await StaffService.getLoginStatus();
+    return await staffAPI.getLoginStatus();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -66,7 +66,7 @@ export const getLoginStatus = createAsyncThunk('staff/getLoginStatus', async (_,
 
 export const refreshToken = createAsyncThunk('staff/refreshToken', async (data, thunkAPI) => {
   try {
-    return await StaffService.refreshToken(data);
+    return await staffAPI.refreshToken(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -75,7 +75,7 @@ export const refreshToken = createAsyncThunk('staff/refreshToken', async (data, 
 // Staff Protected
 export const getProfile = createAsyncThunk('staff/getProfile', async (_, thunkAPI) => {
   try {
-    return await StaffService.getProfile();
+    return await staffAPI.getProfile();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -83,7 +83,7 @@ export const getProfile = createAsyncThunk('staff/getProfile', async (_, thunkAP
 
 export const updateProfile = createAsyncThunk('staff/updateProfile', async (data, thunkAPI) => {
   try {
-    return await StaffService.updateProfile(data);
+    return await staffAPI.updateProfile(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -91,7 +91,7 @@ export const updateProfile = createAsyncThunk('staff/updateProfile', async (data
 
 export const registerDevice = createAsyncThunk('staff/registerDevice', async (data, thunkAPI) => {
   try {
-    return await StaffService.registerDevice(data);
+    return await staffAPI.registerDevice(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -99,7 +99,7 @@ export const registerDevice = createAsyncThunk('staff/registerDevice', async (da
 
 export const logout = createAsyncThunk('staff/logout', async (data, thunkAPI) => {
   try {
-    return await StaffService.logout(data);
+    return await staffAPI.logout(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -107,7 +107,7 @@ export const logout = createAsyncThunk('staff/logout', async (data, thunkAPI) =>
 
 export const getDashboard = createAsyncThunk('staff/getDashboard', async (_, thunkAPI) => {
   try {
-    return await StaffService.getDashboard();
+    return await staffAPI.getDashboard();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -116,7 +116,7 @@ export const getDashboard = createAsyncThunk('staff/getDashboard', async (_, thu
 // Admin: Staff Management
 export const createStaff = createAsyncThunk('staff/createStaff', async (data, thunkAPI) => {
   try {
-    return await StaffService.createStaff(data);
+    return await staffAPI.create(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -124,7 +124,7 @@ export const createStaff = createAsyncThunk('staff/createStaff', async (data, th
 
 export const getAllStaff = createAsyncThunk('staff/getAllStaff', async (_, thunkAPI) => {
   try {
-    return await StaffService.getAllStaff();
+    return await staffAPI.getAll();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -132,7 +132,7 @@ export const getAllStaff = createAsyncThunk('staff/getAllStaff', async (_, thunk
 
 export const getStaffById = createAsyncThunk('staff/getStaffById', async (id, thunkAPI) => {
   try {
-    return await StaffService.getStaffById(id);
+    return await staffAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -140,7 +140,7 @@ export const getStaffById = createAsyncThunk('staff/getStaffById', async (id, th
 
 export const deleteStaff = createAsyncThunk('staff/deleteStaff', async (id, thunkAPI) => {
   try {
-    return await StaffService.deleteStaff(id);
+    return await staffAPI.delete(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }

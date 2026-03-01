@@ -1,280 +1,143 @@
-// src/pages/Default.jsx
 import React from 'react';
+import { Box, Container, Grid, Chip, Typography, Paper, Stack, Avatar, Button, alpha, useTheme, Divider } from '@mui/material';
 import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Card,
-  Stack,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Avatar,
-  useTheme,
-  alpha
-} from '@mui/material';
-import ApexCharts from 'react-apexcharts';
+  ConfirmationNumberTwoTone as CouponIcon,
+  BadgeTwoTone as StaffIcon,
+  TrendingUpTwoTone as SalesIcon,
+  ShoppingCartTwoTone as OrderIcon,
+  ArrowForwardRounded as ArrowIcon,
+  HistoryRounded as LogIcon
+} from '@mui/icons-material';
 
-// Icons
-import GroupTwoToneIcon from '@mui/icons-material/GroupTwoTone';
-import RouterTwoToneIcon from '@mui/icons-material/RouterTwoTone';
-import ConfirmationNumberTwoToneIcon from '@mui/icons-material/ConfirmationNumberTwoTone';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import AccountBalanceWalletTwoToneIcon from '@mui/icons-material/AccountBalanceWalletTwoTone';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-
-// KPI Card Component for reuse and clean code
-const KPICard = ({ title, value, trend, icon, color }) => {
-  const theme = useTheme();
-  const isPositive = trend > 0;
-
-  return (
-    <Card
-      sx={{
-        p: 2.5,
-        borderRadius: 4,
-        height: '100%',
-        border: '1px solid',
-        borderColor: alpha(theme.palette.divider, 0.1),
-        boxShadow: '0 4px 20px 0 rgba(0,0,0,0.05)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary" fontWeight={600} gutterBottom>
-            {title}
-          </Typography>
-          <Typography variant="h4" fontWeight={800} sx={{ color: '#1A1C1E' }}>
-            {value}
-          </Typography>
-          {trend && (
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
-              <TrendingUpIcon
-                sx={{
-                  fontSize: 16,
-                  color: isPositive ? 'success.main' : 'error.main',
-                  transform: isPositive ? 'none' : 'rotate(180deg)'
-                }}
-              />
-              <Typography variant="caption" fontWeight={700} color={isPositive ? 'success.main' : 'error.main'}>
-                {isPositive ? '+' : ''}
-                {trend}%
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {' '}
-                vs last month
-              </Typography>
-            </Stack>
-          )}
-        </Box>
-        <Avatar
-          sx={{
-            bgcolor: alpha(theme.palette[color].main, 0.1),
-            color: theme.palette[color].main,
-            width: 50,
-            height: 50,
-            borderRadius: 3
-          }}
-        >
-          {icon}
-        </Avatar>
-      </Stack>
-      {/* Subtle background decoration */}
-      <Box
-        sx={{
-          position: 'absolute',
-          right: -10,
-          bottom: -10,
-          opacity: 0.03,
-          transform: 'rotate(-20deg)'
-        }}
-      >
-        {React.cloneElement(icon, { sx: { fontSize: 80 } })}
-      </Box>
-    </Card>
-  );
-};
-
-const Default = () => {
+const Dashboard = () => {
   const theme = useTheme();
 
-  // Revenue Trend Data (Area Chart)
-  const revenueChartOptions = {
-    chart: { id: 'revenue-trend', toolbar: { show: false }, sparkline: { enabled: false } },
-    colors: [theme.palette.primary.main],
-    dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 3 },
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05 } },
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'], axisBorder: { show: false } },
-    yaxis: { labels: { show: false } },
-    grid: { borderColor: alpha(theme.palette.divider, 0.1), strokeDashArray: 4 }
-  };
-
-  const leadSourcesOptions = {
-    labels: ['Organic', 'Ads', 'Referral', 'Direct'],
-    colors: [theme.palette.primary.main, theme.palette.info.main, theme.palette.warning.main, theme.palette.success.main],
-    plotOptions: { pie: { donut: { size: '75%', labels: { show: true, total: { show: true, label: 'Total Leads', fontSize: '14px' } } } } },
-    legend: { position: 'bottom' },
-    stroke: { show: false }
-  };
-
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F8FAFC', minHeight: '100vh' }}>
-      {/* Welcome Header */}
-      <Box sx={{ mb: 5 }}>
-        <Typography variant="h4" fontWeight={800} color="text.primary">
-          Command Center
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          System overview and real-time performance metrics.
-        </Typography>
-      </Box>
+    <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', pb: 8 }}>
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 4 }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900} sx={{ color: '#1E293B' }}>
+              Admin Overview
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Welcome back! Here is what's happening with your store today.
+            </Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<LogIcon />} sx={{ borderRadius: '10px', fontWeight: 700 }}>
+            View System Logs
+          </Button>
+        </Stack>
 
-      {/* KPI Section */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="TOTAL CUSTOMERS" value="1,250" trend={12} color="primary" icon={<GroupTwoToneIcon />} />
+        {/* Top Level KPIs */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Total Revenue" value="₹4,25,000" icon={<SalesIcon />} color="#10B981" />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Active Coupons" value="12" icon={<CouponIcon />} color="#6366F1" />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Staff Online" value="4" icon={<StaffIcon />} color="#3B82F6" />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Pending Orders" value="28" icon={<OrderIcon />} color="#F59E0B" />
+          </Grid>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="ACTIVE NODES" value="980" trend={2.4} color="success" icon={<RouterTwoToneIcon />} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="PENDING TICKETS" value="45" trend={-5} color="error" icon={<ConfirmationNumberTwoToneIcon />} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <KPICard title="MONTHLY REVENUE" value="₹75,000" trend={8.1} color="secondary" icon={<AccountBalanceWalletTwoToneIcon />} />
-        </Grid>
-      </Grid>
 
-      {/* Middle Section: Main Analytics */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EFF2F5', boxShadow: 'none' }}>
-            <Stack direction="row" justifyContent="space-between" sx={{ mb: 3 }}>
-              <Typography variant="h6" fontWeight={700}>
-                Revenue Growth
+        <Grid container spacing={3}>
+          {/* Coupon Performance Section */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper sx={{ p: 3, borderRadius: '20px', border: '1px solid #E2E8F0', height: '100%' }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                <Typography variant="h6" fontWeight={800}>
+                  Active Campaigns
+                </Typography>
+                <Button endIcon={<ArrowIcon />} size="small">
+                  Manage Coupons
+                </Button>
+              </Stack>
+              <Stack spacing={2}>
+                <CouponRow name="SUMMER50" usage={145} savings="₹12,400" status="Active" color="success" />
+                <CouponRow name="WELCOME10" usage={890} savings="₹45,000" status="Active" color="success" />
+                <CouponRow name="FLASH25" usage={12} savings="₹1,200" status="Expiring" color="warning" />
+              </Stack>
+            </Paper>
+          </Grid>
+
+          {/* Staff Activity Feed */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper sx={{ p: 3, borderRadius: '20px', border: '1px solid #E2E8F0' }}>
+              <Typography variant="h6" fontWeight={800} sx={{ mb: 3 }}>
+                Staff Activity
               </Typography>
-              <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), width: 32, height: 32 }}>
-                <TrendingUpIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-              </Avatar>
-            </Stack>
-            <ApexCharts
-              options={revenueChartOptions}
-              series={[{ name: 'Revenue', data: [31, 40, 28, 51, 42, 109, 100] }]}
-              type="area"
-              height={320}
-            />
-          </Paper>
+              <Stack spacing={3}>
+                <ActivityItem user="Rahul S." action="Updated Product" target="iPhone 15 Pro" time="2 mins ago" />
+                <ActivityItem user="Priya K." action="Created Coupon" target="DIWALI2024" time="1 hour ago" />
+                <ActivityItem user="Amit V." action="Deleted Staff" target="John Doe (Editor)" time="3 hours ago" />
+              </Stack>
+              <Divider sx={{ my: 3 }} />
+              <Button fullWidth variant="contained" sx={{ borderRadius: '10px', py: 1.2, fontWeight: 700 }}>
+                Manage Staff Members
+              </Button>
+            </Paper>
+          </Grid>
         </Grid>
-
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EFF2F5', boxShadow: 'none', height: '100%' }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
-              Lead Attribution
-            </Typography>
-            <Box sx={{ mt: 4 }}>
-              <ApexCharts options={leadSourcesOptions} series={[44, 25, 13, 18]} type="donut" height={320} />
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Bottom Section: Operations */}
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Paper sx={{ borderRadius: 4, border: '1px solid #EFF2F5', boxShadow: 'none' }}>
-            <Box sx={{ p: 3, borderBottom: '1px solid #F1F4F9' }}>
-              <Typography variant="h6" fontWeight={700}>
-                Live Network Activity
-              </Typography>
-            </Box>
-            <List sx={{ p: 0 }}>
-              {[
-                {
-                  label: 'System Update',
-                  sub: 'Version 2.4 deployment successful',
-                  time: '2m ago',
-                  color: 'success',
-                  icon: <FlashOnIcon fontSize="small" />
-                },
-                {
-                  label: 'Node Outage',
-                  sub: 'Connection lost in Sector-7',
-                  time: '14m ago',
-                  color: 'error',
-                  icon: <ErrorOutlineIcon fontSize="small" />
-                },
-                {
-                  label: 'New Lead',
-                  sub: 'High priority lead from Website',
-                  time: '1h ago',
-                  color: 'info',
-                  icon: <TrendingUpIcon fontSize="small" />
-                }
-              ].map((activity, i) => (
-                <ListItem key={i} divider={i !== 2} sx={{ py: 2 }}>
-                  <ListItemIcon>
-                    <Avatar sx={{ bgcolor: alpha(theme.palette[activity.color].main, 0.1), color: theme.palette[activity.color].main }}>
-                      {activity.icon}
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText primary={<Typography fontWeight={600}>{activity.label}</Typography>} secondary={activity.sub} />
-                  <Typography variant="caption" color="text.secondary">
-                    {activity.time}
-                  </Typography>
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
-
-        {/* Quick Actions / Summary Card */}
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Card
-            sx={{
-              background: 'linear-gradient(135deg, #2363faff 0%, #99b6ffff 100%)',
-              color: 'white',
-              borderRadius: 4,
-              p: 3,
-              height: '100%'
-            }}
-          >
-            <Typography variant="h5" fontWeight={700} gutterBottom>
-              System Health
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8, mb: 4 }}>
-              All systems are currently operational. No scheduled maintenance for the next 48 hours.
-            </Typography>
-            <Divider sx={{ borderColor: alpha('#fff', 0.1), mb: 3 }} />
-            <Grid container spacing={2}>
-              <Grid size={{xs:6}}>
-                <Typography variant="h4" fontWeight={800}>
-                  99.9%
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Uptime
-                </Typography>
-              </Grid>
-              <Grid size={{xs:6}}>
-                <Typography variant="h4" fontWeight={800}>
-                  12ms
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Latency
-                </Typography>
-              </Grid>
-            </Grid>
-          </Card>
-        </Grid>
-      </Grid>
+      </Container>
     </Box>
   );
 };
 
-export default Default;
+// --- Sub-Components ---
+
+const StatCard = ({ title, value, icon, color }) => (
+  <Paper sx={{ p: 3, borderRadius: '20px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center' }}>
+    <Avatar sx={{ bgcolor: alpha(color, 0.1), color: color, width: 56, height: 56, mr: 2 }}>{icon}</Avatar>
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={800}>
+        {title}
+      </Typography>
+      <Typography variant="h5" fontWeight={900}>
+        {value}
+      </Typography>
+    </Box>
+  </Paper>
+);
+
+const CouponRow = ({ name, usage, savings, status, color }) => (
+  <Box sx={{ p: 2, bgcolor: '#F8FAFC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Stack direction="row" spacing={2} alignItems="center">
+      <Box sx={{ bgcolor: '#fff', px: 2, py: 0.5, borderRadius: '6px', border: '1px dashed #CBD5E1' }}>
+        <Typography variant="body2" fontWeight={800} sx={{ letterSpacing: 1 }}>
+          {name}
+        </Typography>
+      </Box>
+      <Typography variant="caption" color="text.secondary">
+        Used <b>{usage}</b> times
+      </Typography>
+    </Stack>
+    <Stack direction="row" spacing={3} alignItems="center">
+      <Typography variant="body2" fontWeight={700} color="success.main">
+        -{savings}
+      </Typography>
+      <Chip label={status} size="small" color={color} sx={{ fontWeight: 800, fontSize: '10px' }} />
+    </Stack>
+  </Box>
+);
+
+const ActivityItem = ({ user, action, target, time }) => (
+  <Stack direction="row" spacing={2}>
+    <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem', fontWeight: 700 }}>{user[0]}</Avatar>
+    <Box>
+      <Typography variant="body2" fontWeight={600}>
+        {user} <span style={{ fontWeight: 400, color: '#64748B' }}>{action}</span> {target}
+      </Typography>
+      <Typography variant="caption" color="text.disabled">
+        {time}
+      </Typography>
+    </Box>
+  </Stack>
+);
+
+export default Dashboard;

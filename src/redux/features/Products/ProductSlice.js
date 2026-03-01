@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
-import ProductService from './ProductService';
+// import { productAPI } from '../../utils/api';
+import { productAPI } from '../../../utils/api';
 
 // ================================
 // Initial State
@@ -36,7 +37,7 @@ const getErrorMessage = (error) =>
 // NEW: Fetch Categories List (Dynamic Category/Subcategory Mapping)
 export const fetchCategoriesList = createAsyncThunk('product/fetchCategories', async (_, thunkAPI) => {
   try {
-    return await ProductService.getCategoriesList();
+    return await productAPI.getCategories();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -45,7 +46,7 @@ export const fetchCategoriesList = createAsyncThunk('product/fetchCategories', a
 // ... (Existing Thunks: fetchProducts, fetchFeaturedProducts, etc.)
 export const fetchProducts = createAsyncThunk('product/fetchAll', async (params, thunkAPI) => {
   try {
-    return await ProductService.getProducts(params);
+    return await productAPI.getAll(params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -53,7 +54,7 @@ export const fetchProducts = createAsyncThunk('product/fetchAll', async (params,
 
 export const fetchFeaturedProducts = createAsyncThunk('product/fetchFeatured', async (_, thunkAPI) => {
   try {
-    return await ProductService.getFeaturedProducts();
+    return await productAPI.getFeatured();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -61,7 +62,7 @@ export const fetchFeaturedProducts = createAsyncThunk('product/fetchFeatured', a
 
 export const fetchProductsByCategory = createAsyncThunk('product/fetchByCategory', async ({ category, params }, thunkAPI) => {
   try {
-    return await ProductService.getProductsByCategory(category, params);
+    return await productAPI.getByCategory(category, params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -69,7 +70,7 @@ export const fetchProductsByCategory = createAsyncThunk('product/fetchByCategory
 
 export const addProduct = createAsyncThunk('product/add', async (data, thunkAPI) => {
   try {
-    const response = await ProductService.addProduct(data);
+    const response = await productAPI.create(data);
     // After adding a product, refresh categories to include potential new ones
     thunkAPI.dispatch(fetchCategoriesList());
     return response;
@@ -83,7 +84,7 @@ export const addProduct = createAsyncThunk('product/add', async (data, thunkAPI)
 // ----------------
 export const searchProducts = createAsyncThunk('product/search', async ({ query, params }, thunkAPI) => {
   try {
-    return await ProductService.searchProducts(query, params);
+    return await productAPI.search(query, params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -94,7 +95,7 @@ export const searchProducts = createAsyncThunk('product/search', async ({ query,
 // ----------------
 export const compareProducts = createAsyncThunk('product/compare', async (data, thunkAPI) => {
   try {
-    return await ProductService.compareProducts(data);
+    return await productAPI.compare(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -105,7 +106,7 @@ export const compareProducts = createAsyncThunk('product/compare', async (data, 
 // ----------------
 export const checkProductAvailability = createAsyncThunk('product/checkAvailability', async ({ id, params }, thunkAPI) => {
   try {
-    return await ProductService.checkAvailability(id, params);
+    return await productAPI.checkAvailability(id, params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -116,7 +117,7 @@ export const checkProductAvailability = createAsyncThunk('product/checkAvailabil
 // ----------------
 export const fetchProductById = createAsyncThunk('product/fetchById', async (id, thunkAPI) => {
   try {
-    return await ProductService.getProductById(id);
+    return await productAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -124,7 +125,7 @@ export const fetchProductById = createAsyncThunk('product/fetchById', async (id,
 
 export const updateProduct = createAsyncThunk('product/update', async ({ id, data }, thunkAPI) => {
   try {
-    const response = await ProductService.updateProduct(id, data);
+    const response = await productAPI.update(id, data);
     // After updating, refresh categories list in case category was changed
     thunkAPI.dispatch(fetchCategoriesList());
     return response;
@@ -159,7 +160,7 @@ const productSlice = createSlice({
       // Categories List
       // ----------------
       .addCase(fetchCategoriesList.fulfilled, (state, action) => {
-        // action.payload.data is the array: [{ category: 'mob-dhi', subcategories: [...] }]
+        // action.payload is the array: [{ category: 'mob-dhi', subcategories: [...] }]
         state.categoriesList = action.payload.data;
       })
 

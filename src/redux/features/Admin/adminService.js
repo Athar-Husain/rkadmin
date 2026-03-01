@@ -1,16 +1,14 @@
-// src/redux/features/Admin/adminService.js
-
 import axios from 'axios';
 
-// ===============================
-// Configuration
-// ===============================
+/* ===============================
+   Configuration
+================================= */
 const BASE_API_URL = import.meta.env.VITE_BACKEND_URL;
 const ADMIN_URL = `${BASE_API_URL}/api/admin`;
 
-// ===============================
-// Axios Instance
-// ===============================
+/* ===============================
+   Axios Instance
+================================= */
 const axiosInstance = axios.create({
   baseURL: ADMIN_URL,
   headers: {
@@ -18,9 +16,9 @@ const axiosInstance = axios.create({
   }
 });
 
-// ===============================
-// Token Management Utility
-// ===============================
+/* ===============================
+   Token Manager
+================================= */
 export const TokenManager = {
   save: (token, expiresInSeconds) => {
     const expiryTime = Date.now() + expiresInSeconds * 1000;
@@ -38,9 +36,9 @@ export const TokenManager = {
   }
 };
 
-// ===============================
-// Axios Interceptor
-// ===============================
+/* ===============================
+   Interceptor
+================================= */
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = TokenManager.getToken();
@@ -48,19 +46,21 @@ axiosInstance.interceptors.request.use(
     if (token && TokenManager.isValid()) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ===============================
-// AdminService Methods
-// ===============================
+/* ===============================
+   Admin Service
+================================= */
 const AdminService = {
-  AdminRegister: (data) => axios.post(`${ADMIN_URL}/AdminRegister`, data).then((res) => res.data),
+  /* ========= AUTH ========= */
+  register: (data) => axios.post(`${ADMIN_URL}/register`, data).then((res) => res.data),
 
-  AdminLogin: async (data) => {
-    const response = await axios.post(`${ADMIN_URL}/AdminLogin`, data);
+  login: async (data) => {
+    const response = await axios.post(`${ADMIN_URL}/login`, data);
     const { token, expiresIn } = response.data;
 
     if (token && expiresIn) {
@@ -70,22 +70,47 @@ const AdminService = {
     return response.data;
   },
 
-  AdminLogout: () => {
+  logout: async () => {
+    await axiosInstance.post('/logout');
     TokenManager.clear();
-    return 'Logout successful';
   },
 
-  forgotPassword: (email) => axios.post(`${ADMIN_URL}/forgotPassword`, { email }).then((res) => res.data),
+  forgotPassword: (email) => axios.post(`${ADMIN_URL}/forgot-password`, { email }).then((res) => res.data),
 
-  verifyOtp: (data) => axios.post(`${ADMIN_URL}/verifyOtp`, data).then((res) => res.data),
+  verifyOtp: (data) => axios.post(`${ADMIN_URL}/verify-otp`, data).then((res) => res.data),
 
-  changePassword: (data) => axiosInstance.patch('/changePassword', data).then((res) => res.data),
+  changePassword: (data) => axiosInstance.patch('/change-password', data).then((res) => res.data),
 
-  getAdminLoginStatus: () => axiosInstance.get('/getAdminLoginStatus').then((res) => res.data),
+  /* ========= PROFILE ========= */
+  getProfile: () => axiosInstance.get('/profile').then((res) => res.data),
 
-  getAdmin: () => axiosInstance.get('/getAdmin').then((res) => res.data.admin),
+  updateProfile: (data) => axiosInstance.put('/profile', data).then((res) => res.data),
 
-  updateAdmin: (data) => axiosInstance.put('/updateAdmin', data).then((res) => res.data.admin)
+  getLoginStatus: () => axiosInstance.get('/login-status').then((res) => res.data),
+
+  /* ========= DASHBOARD ========= */
+  getDashboard: () => axiosInstance.get('/dashboard').then((res) => res.data),
+
+  /* ========= COUPONS ========= */
+  createCoupon: (data) => axiosInstance.post('/coupons', data).then((res) => res.data),
+
+  updateCoupon: (id, data) => axiosInstance.put(`/coupons/${id}`, data).then((res) => res.data),
+
+  getCouponAnalytics: () => axiosInstance.get('/coupons/analytics').then((res) => res.data),
+
+  /* ========= USERS ========= */
+  getUsers: () => axiosInstance.get('/users').then((res) => res.data),
+
+  exportUsers: () => axiosInstance.get('/users/export', { responseType: 'blob' }),
+
+  /* ========= NOTIFICATIONS ========= */
+  sendNotification: (data) => axiosInstance.post('/notifications', data).then((res) => res.data),
+
+  /* ========= PRODUCTS ========= */
+  importProducts: (formData) =>
+    axiosInstance.post('/products/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
 };
 
 export default AdminService;

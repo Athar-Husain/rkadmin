@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // Redux
-import { AdminLogin } from '../../redux/features/Admin/adminSlice';
+import { loginAdmin } from '../../redux/features/Admin/adminSlice';
 
 // Material UI
 import { useTheme } from '@mui/material/styles';
@@ -47,7 +47,7 @@ const AuthLogin = () => {
 
   const onSubmit = async (data) => {
     try {
-      await dispatch(AdminLogin(data)).unwrap();
+      await dispatch(loginAdmin(data)).unwrap();
       // Redirect to original page or home
       navigate(from, { replace: true });
     } catch (err) {
@@ -74,9 +74,9 @@ const AuthLogin = () => {
             size="large"
             variant="contained"
           >
-            {/* * CRITICAL FIX: Add a loading error handler to prevent a blank screen. 
-                         * The image src path is a common source of silent errors. 
-                         */}
+            {/* * CRITICAL FIX: Add a loading error handler to prevent a blank screen.
+             * The image src path is a common source of silent errors.
+             */}
             <img
               src={Google}
               alt="google"
@@ -131,11 +131,7 @@ const AuthLogin = () => {
             })}
             endAdornment={
               <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowPassword((show) => !show)}
-                  onMouseDown={(e) => e.preventDefault()}
-                  edge="end"
-                >
+                <IconButton onClick={() => setShowPassword((show) => !show)} onMouseDown={(e) => e.preventDefault()} edge="end">
                   {showPassword ? <Visibility /> : <VisibilityOff />}
                 </IconButton>
               </InputAdornment>
@@ -146,7 +142,7 @@ const AuthLogin = () => {
         </FormControl>
 
         <Grid container justifyContent="flex-end">
-          <Grid >
+          <Grid>
             <Typography variant="subtitle2" color="primary" sx={{ cursor: 'pointer' }}>
               Forgot Password?
             </Typography>

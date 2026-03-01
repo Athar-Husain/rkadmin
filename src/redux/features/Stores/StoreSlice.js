@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
-import StoreService from './StoreService';
+import { storeAPI } from '../../../utils/api';
 
 // ================================
 // Initial State
@@ -35,7 +35,7 @@ const getErrorMessage = (error) => error?.response?.data?.message || error?.mess
 // ----------------
 export const fetchStores = createAsyncThunk('store/fetchStores', async (params, thunkAPI) => {
   try {
-    return await StoreService.getStores(params);
+    return await storeAPI.getAll(params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -43,7 +43,7 @@ export const fetchStores = createAsyncThunk('store/fetchStores', async (params, 
 
 export const fetchStoreById = createAsyncThunk('store/fetchStoreById', async (id, thunkAPI) => {
   try {
-    return await StoreService.getStoreById(id);
+    return await storeAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -51,7 +51,7 @@ export const fetchStoreById = createAsyncThunk('store/fetchStoreById', async (id
 
 export const fetchStoreHours = createAsyncThunk('store/fetchStoreHours', async (id, thunkAPI) => {
   try {
-    return await StoreService.getStoreHours(id);
+    return await storeAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -59,7 +59,7 @@ export const fetchStoreHours = createAsyncThunk('store/fetchStoreHours', async (
 
 export const fetchNearbyStores = createAsyncThunk('store/fetchNearby', async (params, thunkAPI) => {
   try {
-    return await StoreService.getNearbyStores(params);
+    return await storeAPI.getNearby(params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -70,7 +70,7 @@ export const fetchNearbyStores = createAsyncThunk('store/fetchNearby', async (pa
 // ----------------
 export const staffLogin = createAsyncThunk('store/staffLogin', async (credentials, thunkAPI) => {
   try {
-    return await StoreService.staffLogin(credentials);
+    return await storeAPI.getById(credentials.storeId);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -78,7 +78,7 @@ export const staffLogin = createAsyncThunk('store/staffLogin', async (credential
 
 export const getDashboard = createAsyncThunk('store/getDashboard', async (id, thunkAPI) => {
   try {
-    return await StoreService.getDashboard(id);
+    return await storeAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -89,7 +89,7 @@ export const getDashboard = createAsyncThunk('store/getDashboard', async (id, th
 // ----------------
 export const createStoreAdmin = createAsyncThunk('store/admin/create', async (data, thunkAPI) => {
   try {
-    return await StoreService.createStore(data);
+    return await storeAPI.create(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -97,7 +97,8 @@ export const createStoreAdmin = createAsyncThunk('store/admin/create', async (da
 
 export const fetchAllStoresAdmin = createAsyncThunk('store/admin/fetchAll', async (_, thunkAPI) => {
   try {
-    return await StoreService.getAllStoresAdmin();
+    // console.log('storeAPI.getAll()', storeAPI.getAll());
+    return await storeAPI.getAll();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -105,7 +106,7 @@ export const fetchAllStoresAdmin = createAsyncThunk('store/admin/fetchAll', asyn
 
 export const fetchStoreByIdAdmin = createAsyncThunk('store/admin/fetchById', async (id, thunkAPI) => {
   try {
-    return await StoreService.getStoreByIdAdmin(id);
+    return await storeAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -113,7 +114,7 @@ export const fetchStoreByIdAdmin = createAsyncThunk('store/admin/fetchById', asy
 
 export const updateStoreAdmin = createAsyncThunk('store/admin/update', async ({ id, data }, thunkAPI) => {
   try {
-    return await StoreService.updateStore(id, data);
+    return await storeAPI.update(id, data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -121,7 +122,7 @@ export const updateStoreAdmin = createAsyncThunk('store/admin/update', async ({ 
 
 export const toggleStoreStatusAdmin = createAsyncThunk('store/admin/toggleStatus', async (id, thunkAPI) => {
   try {
-    return await StoreService.toggleStoreStatus(id);
+    return await storeAPI.toggleStatus(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -154,27 +155,25 @@ const storeSlice = createSlice({
       .addCase(fetchStores.pending, (state) => {
         state.isStoreLoading = true;
       })
-      .addCase(fetchStores.fulfilled, (state, action) => {
-        state.isStoreLoading = false;
-        state.stores = action.payload.stores;
-      })
-      .addCase(fetchStores.rejected, (state, action) => {
-        state.isStoreLoading = false;
-        state.isStoreError = true;
-        state.message = action.payload;
-        toast.error(action.payload);
-      })
+      // .addCase(fetchStores.fulfilled, (state, action) => {
+      //   state.isStoreLoading = false;
+      //   state.stores = action.payload;
+      // })
+      // .addCase(fetchStores.rejected, (state, action) => {
+      //   state.isStoreLoading = false;
+      //   state.isStoreError = true;
+      //   state.message = action.payload;
+      //   toast.error(action.payload);
+      // })
 
-      .addCase(fetchStoreByIdAdmin.pending, (state) => {
+      .addCase(fetchStoreById.pending, (state) => {
         state.isStoreLoading = true;
       })
-      .addCase(fetchStoreByIdAdmin.fulfilled, (state, action) => {
+      .addCase(fetchStoreById.fulfilled, (state, action) => {
         state.isStoreLoading = false;
-
-        // console.log('');
-        state.store = action.payload.store;
+        state.store = action.payload;
       })
-      .addCase(fetchStoreByIdAdmin.rejected, (state, action) => {
+      .addCase(fetchStoreById.rejected, (state, action) => {
         state.isStoreLoading = false;
         state.isStoreError = true;
         state.message = action.payload;
@@ -182,7 +181,7 @@ const storeSlice = createSlice({
       })
 
       .addCase(fetchNearbyStores.fulfilled, (state, action) => {
-        state.nearbyStores = action.payload.stores;
+        state.nearbyStores = action.payload;
       })
 
       // ----------------
@@ -199,7 +198,7 @@ const storeSlice = createSlice({
       })
 
       .addCase(getDashboard.fulfilled, (state, action) => {
-        state.storeDashboard = action.payload.dashboard;
+        state.storeDashboard = action.payload;
       })
 
       // ----------------
@@ -207,14 +206,15 @@ const storeSlice = createSlice({
       // ----------------
       .addCase(fetchAllStoresAdmin.fulfilled, (state, action) => {
         state.stores = action.payload.stores;
+        // console.log('action.payload', action.payload);
       })
       .addCase(createStoreAdmin.fulfilled, (state, action) => {
-        state.stores.push(action.payload.store);
+        state.stores.push(action.payload);
         toast.success('Store created successfully');
       })
       .addCase(updateStoreAdmin.fulfilled, (state, action) => {
-        const index = state.stores.findIndex((s) => s._id === action.payload.store._id);
-        if (index !== -1) state.stores[index] = action.payload.store;
+        const index = state.stores.findIndex((s) => s._id === action.payload._id);
+        if (index !== -1) state.stores[index] = action.payload;
         toast.success('Store updated successfully');
       })
       .addCase(toggleStoreStatusAdmin.fulfilled, (state, action) => {

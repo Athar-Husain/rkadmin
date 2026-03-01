@@ -1,7 +1,7 @@
-// assets/icons.js
+// import { icons } from './assets/icons';
 import NavigationOutlinedIcon from '@mui/icons-material/NavigationOutlined';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
-import WifiOutlinedIcon from '@mui/icons-material/WifiOutlined';
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
 import ChromeReaderModeOutlinedIcon from '@mui/icons-material/ChromeReaderModeOutlined';
 import AppRegistrationOutlinedIcon from '@mui/icons-material/AppRegistrationOutlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
@@ -9,17 +9,20 @@ import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import PersonAddAlt1OutlinedIcon from '@mui/icons-material/PersonAddAlt1Outlined';
 import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
-import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
-import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined'; // Added
-import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'; // Added
+import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 
 export const icons = {
   NavigationOutlinedIcon,
   DashboardOutlinedIcon,
-  WifiOutlinedIcon,
+  StorefrontOutlinedIcon, // Better for Store Management
   ChromeReaderModeOutlinedIcon,
   AppRegistrationOutlinedIcon,
   CategoryOutlinedIcon,
@@ -27,15 +30,17 @@ export const icons = {
   PersonAddAlt1OutlinedIcon,
   AppsOutlinedIcon,
   ReportProblemOutlinedIcon,
-  HourglassEmptyOutlinedIcon,
   HelpOutlineOutlinedIcon,
   SecurityOutlinedIcon,
   InsightsOutlinedIcon,
   ListAltOutlinedIcon,
-  CreditCardOutlinedIcon
+  ReceiptLongOutlinedIcon, // Better for Sales
+  LocalOfferOutlinedIcon, // Better for Coupons
+  BadgeOutlinedIcon, // Better for Staff
+  LocationOnOutlinedIcon, // Better for Locations
+  Inventory2OutlinedIcon // Better for Products
 };
 
-// ==============================|| MENU ITEMS ||============================== //
 const menuConfig = {
   items: [
     {
@@ -43,7 +48,6 @@ const menuConfig = {
       title: 'RK Electronics',
       caption: 'Dashboard & Profile',
       type: 'group',
-      icon: icons.NavigationOutlinedIcon,
       children: [
         {
           id: 'dashboard',
@@ -58,19 +62,18 @@ const menuConfig = {
       id: 'pages',
       title: 'Pages & Management',
       type: 'group',
-      icon: icons.NavigationOutlinedIcon,
       children: [
         {
           id: 'stores-management',
           title: 'Store Management',
           type: 'collapse',
-          icon: icons.WifiOutlinedIcon,
+          icon: icons.StorefrontOutlinedIcon,
           children: [
             {
               id: 'viewall-stores',
               title: 'View All Stores',
               type: 'item',
-              icon: icons.ChromeReaderModeOutlinedIcon,
+              icon: icons.ListAltOutlinedIcon,
               url: '/stores'
             }
           ]
@@ -79,13 +82,13 @@ const menuConfig = {
           id: 'Sales-management',
           title: 'Sales Management',
           type: 'collapse',
-          icon: icons.PeopleAltOutlinedIcon,
+          icon: icons.ReceiptLongOutlinedIcon,
           children: [
             {
               id: 'sales-dashboard',
               title: 'Sales Dashboard',
               type: 'item',
-              icon: icons.PeopleAltOutlinedIcon,
+              icon: icons.InsightsOutlinedIcon,
               url: '/sales'
             }
           ]
@@ -94,18 +97,17 @@ const menuConfig = {
           id: 'coupons-management',
           title: 'Coupons Management',
           type: 'collapse',
-          icon: icons.PeopleAltOutlinedIcon,
+          icon: icons.LocalOfferOutlinedIcon,
           children: [
             {
               id: 'all-coupons',
               title: 'All Coupons',
               type: 'item',
-              icon: icons.PeopleAltOutlinedIcon,
+              icon: icons.ListAltOutlinedIcon,
               url: '/coupons'
             }
           ]
         },
-
         {
           id: 'customer-management',
           title: 'Customer Management',
@@ -125,20 +127,20 @@ const menuConfig = {
           id: 'product-management',
           title: 'Product Management',
           type: 'collapse',
-          icon: icons.PeopleAltOutlinedIcon,
+          icon: icons.Inventory2OutlinedIcon,
           children: [
             {
               id: 'all-products',
               title: 'All Products',
               type: 'item',
-              icon: icons.PeopleAltOutlinedIcon,
+              icon: icons.CategoryOutlinedIcon,
               url: '/products'
             },
             {
               id: 'add-product',
               title: 'Add Product',
               type: 'item',
-              icon: icons.PersonAddAlt1OutlinedIcon,
+              icon: icons.AppRegistrationOutlinedIcon,
               url: '/addproduct'
             }
           ]
@@ -147,7 +149,7 @@ const menuConfig = {
           id: 'location-management',
           title: 'Location Management',
           type: 'collapse',
-          icon: icons.ChromeReaderModeOutlinedIcon,
+          icon: icons.LocationOnOutlinedIcon,
           children: [
             {
               id: 'locations',
@@ -162,13 +164,13 @@ const menuConfig = {
           id: 'staff-management',
           title: 'Staff Management',
           type: 'collapse',
-          icon: icons.ChromeReaderModeOutlinedIcon,
+          icon: icons.BadgeOutlinedIcon,
           children: [
             {
               id: 'all-staff',
               title: 'All Staff',
               type: 'item',
-              icon: icons.ChromeReaderModeOutlinedIcon,
+              icon: icons.PeopleAltOutlinedIcon,
               url: '/staff'
             }
           ]
@@ -177,16 +179,15 @@ const menuConfig = {
     },
     {
       id: 'utils',
-      title: 'Utils',
+      title: 'System Utils',
       type: 'group',
-      icon: icons.SecurityOutlinedIcon,
       children: [
         {
-          id: 'util-icons',
-          title: 'Icons',
+          id: 'security',
+          title: 'Security',
           type: 'item',
-          icon: icons.InsightsOutlinedIcon,
-          external: true
+          icon: icons.SecurityOutlinedIcon,
+          url: '/security'
         }
       ]
     },
@@ -194,13 +195,13 @@ const menuConfig = {
       id: 'support',
       title: 'Support',
       type: 'group',
-      icon: icons.HelpOutlineOutlinedIcon,
       children: [
         {
           id: 'documentation',
           title: 'Documentation',
           type: 'item',
           icon: icons.HelpOutlineOutlinedIcon,
+          url: '/docs',
           external: true
         }
       ]

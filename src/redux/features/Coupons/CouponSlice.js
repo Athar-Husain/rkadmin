@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
-import CouponService from './CouponService';
+import { couponAPI } from '../../../utils/api';
 
 // ================================
 // Initial State
@@ -14,7 +14,13 @@ const initialState = {
   isCouponLoading: false,
   isCouponSuccess: false,
   isCouponError: false,
-  message: ''
+  message: '',
+  dynamicCategories: [],
+  dynamicBrands: [],
+  dynamicOptions: {
+    categories: [],
+    brands: []
+  }
 };
 
 // ================================
@@ -31,15 +37,7 @@ const getErrorMessage = (error) => error?.response?.data?.message || error?.mess
 // ----------------
 export const createCouponAdmin = createAsyncThunk('coupon/admin/create', async (data, thunkAPI) => {
   try {
-    return await CouponService.createCoupon(data);
-  } catch (error) {
-    return thunkAPI.rejectWithValue(getErrorMessage(error));
-  }
-});
-
-export const createCoupon2Admin = createAsyncThunk('coupon/admin/create2', async (data, thunkAPI) => {
-  try {
-    return await CouponService.createCoupon2(data);
+    return await couponAPI.create(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -47,7 +45,15 @@ export const createCoupon2Admin = createAsyncThunk('coupon/admin/create2', async
 
 export const fetchAllCouponsAdmin = createAsyncThunk('coupon/admin/fetchAll', async (_, thunkAPI) => {
   try {
-    return await CouponService.getAllCouponsAdmin();
+    return await couponAPI.getAll();
+  } catch (error) {
+    return thunkAPI.rejectWithValue(getErrorMessage(error));
+  }
+});
+
+export const dynamicOptions = createAsyncThunk('coupon/admin/dynamicOptions', async (_, thunkAPI) => {
+  try {
+    return await couponAPI.dynamicOptions();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -55,7 +61,7 @@ export const fetchAllCouponsAdmin = createAsyncThunk('coupon/admin/fetchAll', as
 
 export const updateCouponAdmin = createAsyncThunk('coupon/admin/update', async ({ id, data }, thunkAPI) => {
   try {
-    return await CouponService.updateCoupon(id, data);
+    return await couponAPI.update(id, data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -63,7 +69,7 @@ export const updateCouponAdmin = createAsyncThunk('coupon/admin/update', async (
 
 export const getCouponAnalyticsAdmin = createAsyncThunk('coupon/admin/analytics', async (_, thunkAPI) => {
   try {
-    return await CouponService.getCouponAnalytics();
+    return await couponAPI.getAnalytics();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -71,7 +77,7 @@ export const getCouponAnalyticsAdmin = createAsyncThunk('coupon/admin/analytics'
 
 export const fetchRedemptionHistoryAdmin = createAsyncThunk('coupon/admin/redemptionHistory', async ({ id, params }, thunkAPI) => {
   try {
-    return await CouponService.getRedemptionHistory(id, params);
+    return await couponAPI.getRedemptions(id, params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -82,7 +88,7 @@ export const fetchRedemptionHistoryAdmin = createAsyncThunk('coupon/admin/redemp
 // ----------------
 export const fetchMyCoupons = createAsyncThunk('coupon/user/fetchMyCoupons', async (params, thunkAPI) => {
   try {
-    return await CouponService.getMyCoupons(params);
+    return await couponAPI.getMyCoupons(params);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -90,7 +96,7 @@ export const fetchMyCoupons = createAsyncThunk('coupon/user/fetchMyCoupons', asy
 
 export const fetchCouponById = createAsyncThunk('coupon/user/fetchCouponById', async (id, thunkAPI) => {
   try {
-    return await CouponService.getCouponById(id);
+    return await couponAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -98,7 +104,7 @@ export const fetchCouponById = createAsyncThunk('coupon/user/fetchCouponById', a
 
 export const claimCouponUser = createAsyncThunk('coupon/user/claimCoupon', async (id, thunkAPI) => {
   try {
-    return await CouponService.claimCoupon(id);
+    return await couponAPI.claim(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -109,7 +115,7 @@ export const claimCouponUser = createAsyncThunk('coupon/user/claimCoupon', async
 // ----------------
 export const validateCouponStaff = createAsyncThunk('coupon/staff/validateCoupon', async (data, thunkAPI) => {
   try {
-    return await CouponService.validateCoupon(data);
+    return await couponAPI.validate(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -117,7 +123,7 @@ export const validateCouponStaff = createAsyncThunk('coupon/staff/validateCoupon
 
 export const validateForStaff = createAsyncThunk('coupon/staff/validateForStaff', async (data, thunkAPI) => {
   try {
-    return await CouponService.validateForStaff(data);
+    return await couponAPI.validateForStaff(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -125,7 +131,7 @@ export const validateForStaff = createAsyncThunk('coupon/staff/validateForStaff'
 
 export const redeemCouponStaff = createAsyncThunk('coupon/staff/redeemCoupon', async (data, thunkAPI) => {
   try {
-    return await CouponService.redeemCoupon(data);
+    return await couponAPI.redeem(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -154,10 +160,7 @@ const couponSlice = createSlice({
         state.coupons.push(action.payload.coupon);
         toast.success('Coupon created successfully');
       })
-      .addCase(createCoupon2Admin.fulfilled, (state, action) => {
-        state.coupons.push(action.payload.coupon);
-        toast.success('Coupon created successfully (v2)');
-      })
+
       .addCase(fetchAllCouponsAdmin.fulfilled, (state, action) => {
         state.coupons = action.payload.coupons;
       })
@@ -171,6 +174,11 @@ const couponSlice = createSlice({
       })
       .addCase(fetchRedemptionHistoryAdmin.fulfilled, (state, action) => {
         state.redemptionHistory = action.payload.redemptions;
+      })
+
+      .addCase(dynamicOptions.fulfilled, (state, action) => {
+        console.log('dynamicOptions action.payload', action.payload);
+        (state.dynamicCategories = action.payload.dynamicOptions.categories), (state.dynamicBrands = action.payload.dynamicOptions.brands);
       })
 
       // ----------------

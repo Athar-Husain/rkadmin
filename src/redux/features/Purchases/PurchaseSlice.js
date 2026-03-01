@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
-import PurchaseService from './PurchaseService';
+import { purchaseAPI } from '../../../utils/api';
 
 const initialState = {
   purchases: [],
@@ -25,7 +25,7 @@ const getErrorMessage = (error) =>
 // USER
 export const getMyPurchases = createAsyncThunk('purchase/getMyPurchases', async (_, thunkAPI) => {
   try {
-    return await PurchaseService.getMyPurchases();
+    return await purchaseAPI.getMyPurchases();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -33,7 +33,7 @@ export const getMyPurchases = createAsyncThunk('purchase/getMyPurchases', async 
 
 export const getPurchaseById = createAsyncThunk('purchase/getPurchaseById', async (id, thunkAPI) => {
   try {
-    return await PurchaseService.getPurchaseById(id);
+    return await purchaseAPI.getById(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -41,7 +41,7 @@ export const getPurchaseById = createAsyncThunk('purchase/getPurchaseById', asyn
 
 export const addRating = createAsyncThunk('purchase/addRating', async ({ id, data }, thunkAPI) => {
   try {
-    return await PurchaseService.addRating(id, data);
+    return await purchaseAPI.addRating(id, data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -49,7 +49,7 @@ export const addRating = createAsyncThunk('purchase/addRating', async ({ id, dat
 
 export const updateFeedback = createAsyncThunk('purchase/updateFeedback', async ({ id, data }, thunkAPI) => {
   try {
-    return await PurchaseService.updateFeedback(id, data);
+    return await purchaseAPI.updateFeedback(id, data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -58,7 +58,7 @@ export const updateFeedback = createAsyncThunk('purchase/updateFeedback', async 
 // STAFF
 export const recordPurchase = createAsyncThunk('purchase/recordPurchase', async (data, thunkAPI) => {
   try {
-    return await PurchaseService.recordPurchase(data);
+    return await purchaseAPI.create(data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -66,7 +66,7 @@ export const recordPurchase = createAsyncThunk('purchase/recordPurchase', async 
 
 export const getStorePurchases = createAsyncThunk('purchase/getStorePurchases', async (storeId, thunkAPI) => {
   try {
-    return await PurchaseService.getStorePurchases(storeId);
+    return await purchaseAPI.getByStore(storeId);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -74,7 +74,7 @@ export const getStorePurchases = createAsyncThunk('purchase/getStorePurchases', 
 
 export const updatePurchaseStatus = createAsyncThunk('purchase/updatePurchaseStatus', async ({ id, data }, thunkAPI) => {
   try {
-    return await PurchaseService.updatePurchaseStatus(id, data);
+    return await purchaseAPI.updateStatus(id, data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -82,7 +82,7 @@ export const updatePurchaseStatus = createAsyncThunk('purchase/updatePurchaseSta
 
 export const cancelPurchase = createAsyncThunk('purchase/cancelPurchase', async ({ id, data }, thunkAPI) => {
   try {
-    return await PurchaseService.cancelPurchase(id, data);
+    return await purchaseAPI.cancel(id, data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -91,7 +91,7 @@ export const cancelPurchase = createAsyncThunk('purchase/cancelPurchase', async 
 // REPORTS
 export const getStoreSalesReport = createAsyncThunk('purchase/getStoreSalesReport', async (storeId, thunkAPI) => {
   try {
-    return await PurchaseService.getStoreSalesReport(storeId);
+    return await purchaseAPI.getStoreReport(storeId);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -99,7 +99,7 @@ export const getStoreSalesReport = createAsyncThunk('purchase/getStoreSalesRepor
 
 export const getUserSpendingReport = createAsyncThunk('purchase/getUserSpendingReport', async (userId, thunkAPI) => {
   try {
-    return await PurchaseService.getUserSpendingReport(userId);
+    return await purchaseAPI.getUserSpendingReport(userId);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -108,7 +108,7 @@ export const getUserSpendingReport = createAsyncThunk('purchase/getUserSpendingR
 // ADMIN
 export const getAllPurchases = createAsyncThunk('purchase/getAllPurchases', async (_, thunkAPI) => {
   try {
-    return await PurchaseService.getAllPurchases();
+    return await purchaseAPI.getAll();
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -116,7 +116,7 @@ export const getAllPurchases = createAsyncThunk('purchase/getAllPurchases', asyn
 
 export const refundPurchase = createAsyncThunk('purchase/refundPurchase', async ({ id, data }, thunkAPI) => {
   try {
-    return await PurchaseService.refundPurchase(id, data);
+    return await purchaseAPI.refund(id, data);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
@@ -124,7 +124,7 @@ export const refundPurchase = createAsyncThunk('purchase/refundPurchase', async 
 
 export const deletePurchase = createAsyncThunk('purchase/deletePurchase', async (id, thunkAPI) => {
   try {
-    return await PurchaseService.deletePurchase(id);
+    return await purchaseAPI.delete(id);
   } catch (error) {
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }

@@ -1,289 +1,147 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
+  Grid,
   TextField,
   MenuItem,
-  Grid,
-  Divider,
+  Button,
+  Box,
   Typography,
-  Chip
+  Divider,
+  Chip,
+  DialogActions
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllCitiesWithAreasAdmin } from '../../redux/features/Locations/LocationSlice';
-import { createCouponAdmin } from '../../redux/features/Coupons/CouponSlice';
+import * as XLSX from 'xlsx';
 
-export default function CreateCouponDialog({ open, onClose, onRefresh }) {
-  const dispatch = useDispatch();
-  const { allCitiesWithAreas, isLocationLoading } = useSelector((state) => state.location);
-
-  const { control, handleSubmit, watch, reset } = useForm({
+export default function CreateCouponDialog({ open, onClose, onSubmitApi }) {
+  const { control, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
-      title: '',
-      code: '',
-      type: 'PERCENTAGE',
-      value: 0,
-      minPurchaseAmount: 0,
-      maxDiscount: 0,
-      targeting: { type: 'ALL', geographic: { cities: [], areas: [] } },
-      productRules: { type: 'ALL_PRODUCTS', categories: [], brands: [] },
-      status: 'ACTIVE'
+      targeting: { type: 'ALL', targetedMobiles: [], users: [] },
+      productRules: { type: 'ALL_PRODUCTS', categories: [], brands: [], products: [] },
+      status: 'ACTIVE',
+      type: 'FIXED_AMOUNT'
     }
   });
 
-  const [locations, setLocations] = useState([]);
-  const [loadingLocations, setLoadingLocations] = useState(true);
+  const [fileName, setFileName] = useState('');
+  const targetType = watch('targeting.type');
+  const productType = watch('productRules.type');
 
-  const targetingType = watch('targeting.type');
-  const selectedCities = watch('targeting.geographic.cities');
-  const selectedAreas = watch('targeting.geographic.areas');
-
-  useEffect(() => {
-    if (open) {
-      setLoadingLocations(true);
-      dispatch(fetchAllCitiesWithAreasAdmin())
-        .then(() => {
-          setLocations(allCitiesWithAreas);
-          setLoadingLocations(false);
-        })
-        .catch((error) => {
-          console.error('Error fetching locations:', error);
-          setLoadingLocations(false);
-        });
-    }
-  }, [open, dispatch]);
-
-  const normalizeTargeting = (data) => {
-    if (data.targeting.type !== 'GEOGRAPHIC') return data;
-
-    const cities = data.targeting.geographic.cities || [];
-    const areas = data.targeting.geographic.areas || [];
-
-    return {
-      ...data,
-      targeting: {
-        ...data.targeting,
-        geographic: {
-          cities: cities.includes('__ALL__') ? [] : cities,
-          areas: areas.includes('__ALL__') ? [] : areas
-        }
-      }
+  const handleExcel = (e) => {
+    const file = e.target.files[0];
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const wb = XLSX.read(evt.target.result, { type: 'binary' });
+      const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      const mobiles = data.map((r) => String(r.mobile || r.phone || '')).filter(Boolean);
+      setValue('targeting.targetedMobiles', mobiles);
     };
-  };
-
-  const onSubmit = async (formData) => {
-    try {
-      const data = normalizeTargeting(formData);
-
-      dispatch(createCouponAdmin(data));
-      reset();
-      onRefresh();
-      onClose();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error creating coupon');
-      console.log('error', err);
-    }
-  };
-
-  const onSubmit1 = async (data) => {
-    try {
-      // Modify the data to handle "All" cases:
-      if (!data.targeting.geographic.cities || data.targeting.geographic.cities.length === 0) {
-        data.targeting.geographic.cities = ['ALL']; // Select all cities if none selected
-      }
-
-      if (!data.targeting.geographic.areas || data.targeting.geographic.areas.length === 0) {
-        data.targeting.geographic.areas = ['ALL']; // Select all areas if none selected
-      }
-
-      //   await axios.post('/api/coupons', data);
-      dispatch(createCouponAdmin(data));
-      reset();
-      onRefresh();
-      onClose();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error creating coupon');
-      console.log('error', err);
-    }
+    reader.readAsBinaryString(file);
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 'bold' }}>Create New Campaign Offer</DialogTitle>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <DialogTitle>Create Marketing Campaign</DialogTitle>
+      <form onSubmit={handleSubmit(onSubmitApi)}>
         <DialogContent dividers>
-          <Grid container spacing={3}>
-            {/* Basic Info */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Controller
-                name="title"
-                control={control}
-                render={({ field }) => <TextField {...field} label="Coupon Title" fullWidth placeholder="E.g. Diwali Dhamaka" />}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
               <Controller
                 name="code"
                 control={control}
-                render={({ field }) => <TextField {...field} label="Coupon Code" fullWidth placeholder="DIWALI2024" />}
+                render={({ field }) => <TextField {...field} label="Coupon Code" fullWidth required />}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <Controller
+                name="title"
+                control={control}
+                render={({ field }) => <TextField {...field} label="Campaign Title" fullWidth required />}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => <TextField {...field} label="Notification Message" fullWidth multiline rows={2} />}
               />
             </Grid>
 
-            {/* Values */}
-            <Grid size={{ xs: 4 }}>
-              <Controller
-                name="type"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select label="Type" fullWidth>
-                    <MenuItem value="PERCENTAGE">Percentage</MenuItem>
-                    <MenuItem value="FLAT">Flat Discount</MenuItem>
-                  </TextField>
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 4 }}>
-              <Controller
-                name="value"
-                control={control}
-                render={({ field }) => <TextField {...field} type="number" label="Value" fullWidth />}
-              />
-            </Grid>
-            <Grid size={{ xs: 4 }}>
-              <Controller
-                name="minPurchaseAmount"
-                control={control}
-                render={({ field }) => <TextField {...field} type="number" label="Min Purchase (₹)" fullWidth />}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Divider>
-                <Chip label="Targeting" />
+                <Chip label="TARGETING" />
               </Divider>
             </Grid>
-
-            {/* Geographic Targeting */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Controller
                 name="targeting.type"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Targeting Type" fullWidth>
-                    <MenuItem value="__ALL__">All Cities</MenuItem>
-                    {/* <MenuItem value="ALL">All Users</MenuItem> */}
-                    <MenuItem value="GEOGRAPHIC">Geographic (City/Area)</MenuItem>
-                    <MenuItem value="INDIVIDUAL">Specific Users</MenuItem>
+                  <TextField {...field} select label="Target Type" fullWidth>
+                    <MenuItem value="ALL">All Users</MenuItem>
+                    <MenuItem value="INDIVIDUAL">Excel Upload (Mobiles)</MenuItem>
                   </TextField>
                 )}
               />
             </Grid>
 
-            {targetingType === 'GEOGRAPHIC' && (
-              <>
-                {/* Cities Selection */}
-                <Grid item xs={6}>
-                  <Controller
-                    name="targeting.geographic.cities"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        select
-                        label="Select Cities"
-                        fullWidth
-                        SelectProps={{ multiple: true }}
-                        disabled={loadingLocations}
-                      >
-                        {loadingLocations ? (
-                          <MenuItem disabled>Loading Cities...</MenuItem>
-                        ) : (
-                          locations.map((loc) => (
-                            <MenuItem key={loc._id} value={loc._id}>
-                              {loc.city}
-                            </MenuItem>
-                          ))
-                        )}
-                      </TextField>
-                    )}
-                  />
-                </Grid>
-
-                {/* Areas Selection */}
-                <Grid item xs={6}>
-                  <Controller
-                    name="targeting.geographic.areas"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        select
-                        label="Select Areas"
-                        fullWidth
-                        SelectProps={{ multiple: true }}
-                        disabled={loadingLocations || !selectedCities || selectedCities.length === 0}
-                      >
-                        {/* Add "All Areas" option */}
-                        <MenuItem value="ALL">All Areas</MenuItem>
-
-                        {loadingLocations ? (
-                          <MenuItem disabled>Loading Areas...</MenuItem>
-                        ) : (
-                          selectedCities?.map((cityId) => {
-                            const city = locations.find((loc) => loc._id === cityId);
-                            return (
-                              city?.areas.map((area) => (
-                                <MenuItem key={area.name} value={area.name}>
-                                  {area.name}
-                                </MenuItem>
-                              )) || []
-                            );
-                          })
-                        )}
-                      </TextField>
-                    )}
-                  />
-                </Grid>
-              </>
+            {targetType === 'INDIVIDUAL' && (
+              <Grid item xs={12}>
+                <Box sx={{ border: '1px dashed grey', p: 2, textAlign: 'center' }}>
+                  <Button variant="outlined" component="label">
+                    Upload Excel <input type="file" hidden onChange={handleExcel} />
+                  </Button>
+                  <Typography variant="caption" display="block">
+                    {fileName || "Column must be named 'mobile'"}
+                  </Typography>
+                </Box>
+              </Grid>
             )}
 
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="caption" color="primary">
-                Users in selected cities/areas will receive an FCM Push Notification.
-              </Typography>
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Divider>
-                <Chip label="Product Rules" />
+                <Chip label="PRODUCT SCOPE" />
               </Divider>
             </Grid>
-
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Controller
                 name="productRules.type"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Rule Type" fullWidth>
-                    <MenuItem value="ALL_PRODUCTS">All Products</MenuItem>
-                    <MenuItem value="CATEGORY">Specific Categories</MenuItem>
-                    <MenuItem value="BRAND">Specific Brands</MenuItem>
+                  <TextField {...field} select label="Restriction Type" fullWidth>
+                    <MenuItem value="ALL_PRODUCTS">Store Wide</MenuItem>
+                    <MenuItem value="CATEGORY">By Category</MenuItem>
+                    <MenuItem value="BRAND">By Brand</MenuItem>
                   </TextField>
                 )}
               />
             </Grid>
+            {productType !== 'ALL_PRODUCTS' && (
+              <Grid item xs={12}>
+                <Controller
+                  name={`productRules.${productType.toLowerCase()}s`}
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Comma Separated Values"
+                      fullWidth
+                      onChange={(e) => field.onChange(e.target.value.split(','))}
+                    />
+                  )}
+                />
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
-
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" color="primary" size="large">
-            Create & Notify Users
+          <Button type="submit" variant="contained">
+            Create Coupon
           </Button>
         </DialogActions>
       </form>
