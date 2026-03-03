@@ -26,21 +26,17 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
   const { allCitiesWithAreas = [] } = useSelector((state) => state.location);
 
-  const { control, handleSubmit, watch, reset } = useForm({
+  const { control, handleSubmit, watch, reset, setValue } = useForm({
     defaultValues: {
       title: '',
       shortDescription: '',
       imageUrl: '',
-      displayOrder: 0,
       status: 'DRAFT',
       startDate: '',
       endDate: '',
       targeting: {
         type: 'ALL',
-        geographic: {
-          cities: [],
-          areas: []
-        }
+        geographic: { cities: [], areas: [] }
       }
     }
   });
@@ -50,18 +46,16 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
   const imageUrl = watch('imageUrl');
 
   useEffect(() => {
-    if (open) {
-      dispatch(fetchAllCitiesWithAreasAdmin());
-    }
+    if (open) dispatch(fetchAllCitiesWithAreasAdmin());
   }, [open, dispatch]);
 
+  // Hydrate edit data
   useEffect(() => {
     if (promotion) {
       reset({
         title: promotion.title || '',
         shortDescription: promotion.description || '',
         imageUrl: promotion.imageUrl || '',
-        displayOrder: promotion.displayOrder ?? 0,
         status: promotion.isActive ? 'ACTIVE' : 'DRAFT',
         startDate: promotion.startDate?.split('T')[0] || '',
         endDate: promotion.endDate?.split('T')[0] || '',
@@ -77,41 +71,13 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
   const availableAreas = useMemo(() => {
     if (!selectedCities?.length) return [];
-    return allCitiesWithAreas.filter((city) => selectedCities.includes(city._id)).flatMap((city) => city.areas || []);
+    return allCitiesWithAreas.filter((c) => selectedCities.includes(c._id)).flatMap((c) => c.areas || []);
   }, [selectedCities, allCitiesWithAreas]);
-
-  // const onSubmit = async (data) => {
-  //   const payload = {
-  //     ...data,
-  //     isActive: data.status === 'ACTIVE'
-  //   };
-
-  //   try {
-  //     if (isEdit) {
-  //       await dispatch(updatePromotion({ id: promotion._id, data: payload })).unwrap();
-  //     } else {
-  //       await dispatch(createPromotion(payload)).unwrap();
-  //     }
-
-  //     onRefresh?.();
-  //     onClose();
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // };
 
   const onSubmit = async (data) => {
     const payload = {
       ...data,
-      isActive: data.status === 'ACTIVE',
-      targeting: {
-        ...data.targeting,
-        geographic: {
-          ...data.targeting.geographic,
-          cities: data.targeting.geographic?.cities?.map((id) => String(id)) || [],
-          areas: data.targeting.geographic?.areas?.map((id) => String(id)) || []
-        }
-      }
+      isActive: data.status === 'ACTIVE'
     };
 
     try {
@@ -123,8 +89,8 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
       onRefresh?.();
       onClose();
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -135,7 +101,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent dividers>
           <Grid container spacing={3}>
-            {/* Basic Info */}
+            {/* BASIC INFO */}
             <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
                 Basic Information
@@ -158,10 +124,20 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
                 name="status"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Status" fullWidth>
-                    <MenuItem value="DRAFT">Draft</MenuItem>
-                    <MenuItem value="ACTIVE">Active</MenuItem>
-                  </TextField>
+                  <Stack direction="row" spacing={1}>
+                    <Chip
+                      label="Draft"
+                      color={field.value === 'DRAFT' ? 'default' : 'default'}
+                      variant={field.value === 'DRAFT' ? 'filled' : 'outlined'}
+                      onClick={() => field.onChange('DRAFT')}
+                    />
+                    <Chip
+                      label="Active"
+                      color="success"
+                      variant={field.value === 'ACTIVE' ? 'filled' : 'outlined'}
+                      onClick={() => field.onChange('ACTIVE')}
+                    />
+                  </Stack>
                 )}
               />
             </Grid>
@@ -174,6 +150,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
               />
             </Grid>
 
+            {/* IMAGE */}
             <Grid size={{ xs: 12 }}>
               <Controller name="imageUrl" control={control} render={({ field }) => <TextField {...field} label="Image URL" fullWidth />} />
             </Grid>
@@ -195,25 +172,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
               </Grid>
             )}
 
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Controller
-                name="displayOrder"
-                control={control}
-                rules={{ required: 'Display order required' }}
-                render={({ field, fieldState }) => (
-                  <TextField
-                    {...field}
-                    type="number"
-                    label="Display Order"
-                    fullWidth
-                    error={!!fieldState.error}
-                    helperText={fieldState.error?.message || 'Lower number appears first'}
-                  />
-                )}
-              />
-            </Grid>
-
-            {/* Validity */}
+            {/* VALIDITY */}
             <Grid size={{ xs: 12 }}>
               <Divider>
                 <Chip label="Validity Period" />
@@ -222,7 +181,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
             <Grid size={{ xs: 12, md: 6 }}>
               <Controller
-                name="validFrom"
+                name="startDate"
                 control={control}
                 render={({ field }) => <TextField {...field} type="date" label="Start Date" fullWidth InputLabelProps={{ shrink: true }} />}
               />
@@ -230,13 +189,13 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
             <Grid size={{ xs: 12, md: 6 }}>
               <Controller
-                name="validUntil"
+                name="endDate"
                 control={control}
                 render={({ field }) => <TextField {...field} type="date" label="End Date" fullWidth InputLabelProps={{ shrink: true }} />}
               />
             </Grid>
 
-            {/* Targeting */}
+            {/* TARGETING */}
             <Grid size={{ xs: 12 }}>
               <Divider>
                 <Chip label="Targeting" />
@@ -266,7 +225,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
                       <Autocomplete
                         multiple
                         options={allCitiesWithAreas}
-                        getOptionLabel={(option) => option.city}
+                        getOptionLabel={(o) => o.city}
                         value={allCitiesWithAreas.filter((c) => field.value?.includes(c._id))}
                         onChange={(_, newValue) => field.onChange(newValue.map((v) => v._id))}
                         renderInput={(params) => <TextField {...params} label="Cities" />}
@@ -283,7 +242,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
                       <Autocomplete
                         multiple
                         options={availableAreas}
-                        getOptionLabel={(option) => option.name}
+                        getOptionLabel={(o) => o.name}
                         value={availableAreas.filter((a) => field.value?.includes(a._id))}
                         onChange={(_, newValue) => field.onChange(newValue.map((v) => v._id))}
                         renderInput={(params) => <TextField {...params} label="Areas" />}

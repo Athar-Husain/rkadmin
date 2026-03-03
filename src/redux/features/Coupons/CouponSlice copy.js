@@ -2,6 +2,9 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import { couponAPI } from '../../../utils/api';
 
+// ================================
+// Initial State
+// ================================
 const initialState = {
   coupons: [],
   myCoupons: [],
@@ -9,6 +12,7 @@ const initialState = {
   redemptionHistory: [],
   analytics: [],
   isCouponLoading: false,
+  isCouponSuccess: false,
   isCouponError: false,
   message: '',
   dynamicCategories: [],
@@ -19,9 +23,18 @@ const initialState = {
   }
 };
 
+// ================================
+// Helper: Extract error messages
+// ================================
 const getErrorMessage = (error) => error?.response?.data?.message || error?.message || 'Something went wrong';
 
+// ================================
 // Async Thunks
+// ================================
+
+// ----------------
+// Admin
+// ----------------
 export const createCouponAdmin = createAsyncThunk('coupon/admin/create', async (data, thunkAPI) => {
   try {
     return await couponAPI.create(data);
@@ -70,6 +83,9 @@ export const fetchRedemptionHistoryAdmin = createAsyncThunk('coupon/admin/redemp
   }
 });
 
+// ----------------
+// User
+// ----------------
 export const fetchMyCoupons = createAsyncThunk('coupon/user/fetchMyCoupons', async (params, thunkAPI) => {
   try {
     return await couponAPI.getMyCoupons(params);
@@ -94,6 +110,9 @@ export const claimCouponUser = createAsyncThunk('coupon/user/claimCoupon', async
   }
 });
 
+// ----------------
+// Store Staff
+// ----------------
 export const validateCouponStaff = createAsyncThunk('coupon/staff/validateCoupon', async (data, thunkAPI) => {
   try {
     return await couponAPI.validate(data);
@@ -118,24 +137,32 @@ export const redeemCouponStaff = createAsyncThunk('coupon/staff/redeemCoupon', a
   }
 });
 
+// ================================
+// Slice
+// ================================
 const couponSlice = createSlice({
   name: 'coupon',
   initialState,
   reducers: {
     RESET_COUPON_STATE: (state) => {
       state.isCouponLoading = false;
+      state.isCouponSuccess = false;
       state.isCouponError = false;
       state.message = '';
     }
   },
   extraReducers: (builder) => {
     builder
+      // ----------------
+      // Admin
+      // ----------------
       .addCase(createCouponAdmin.fulfilled, (state, action) => {
         state.coupons.push(action.payload.coupon);
         toast.success('Coupon created successfully');
       })
+
       .addCase(fetchAllCouponsAdmin.fulfilled, (state, action) => {
-        state.coupons = action.payload.coupons || [];
+        state.coupons = action.payload.coupons;
       })
       .addCase(updateCouponAdmin.fulfilled, (state, action) => {
         const index = state.coupons.findIndex((c) => c._id === action.payload.coupon._id);
@@ -148,10 +175,15 @@ const couponSlice = createSlice({
       .addCase(fetchRedemptionHistoryAdmin.fulfilled, (state, action) => {
         state.redemptionHistory = action.payload.redemptions;
       })
+
       .addCase(dynamicOptions.fulfilled, (state, action) => {
-        state.dynamicCategories = action.payload.dynamicOptions.categories;
-        state.dynamicBrands = action.payload.dynamicOptions.brands;
+        console.log('dynamicOptions action.payload', action.payload);
+        (state.dynamicCategories = action.payload.dynamicOptions.categories), (state.dynamicBrands = action.payload.dynamicOptions.brands);
       })
+
+      // ----------------
+      // User
+      // ----------------
       .addCase(fetchMyCoupons.fulfilled, (state, action) => {
         state.myCoupons = action.payload.coupons;
       })
@@ -162,19 +194,23 @@ const couponSlice = createSlice({
         state.myCoupons.push(action.payload.userCoupon);
         toast.success('Coupon claimed successfully');
       })
-      .addMatcher(
-        (action) => action.type.endsWith('/pending'),
-        (state) => {
-          state.isCouponLoading = true;
-          state.isCouponError = false;
-        }
-      )
-      .addMatcher(
-        (action) => action.type.endsWith('/fulfilled'),
-        (state) => {
-          state.isCouponLoading = false;
-        }
-      )
+
+      // ----------------
+      // Store Staff
+      // ----------------
+      .addCase(validateCouponStaff.fulfilled, (state, action) => {
+        toast.success('Coupon validated successfully');
+      })
+      .addCase(validateForStaff.fulfilled, (state, action) => {
+        toast.success('Coupon validated for staff');
+      })
+      .addCase(redeemCouponStaff.fulfilled, (state, action) => {
+        toast.success('Coupon redeemed successfully');
+      })
+
+      // ----------------
+      // Error handling
+      // ----------------
       .addMatcher(
         (action) => action.type.endsWith('/rejected'),
         (state, action) => {
@@ -182,6 +218,21 @@ const couponSlice = createSlice({
           state.isCouponError = true;
           state.message = action.payload;
           toast.error(action.payload);
+        }
+      )
+      .addMatcher(
+        (action) => action.type.endsWith('/pending'),
+        (state) => {
+          state.isCouponLoading = true;
+          state.isCouponError = false;
+          state.message = '';
+        }
+      )
+      .addMatcher(
+        (action) => action.type.endsWith('/fulfilled'),
+        (state) => {
+          state.isCouponLoading = false;
+          state.isCouponSuccess = true;
         }
       );
   }

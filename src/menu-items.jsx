@@ -94,6 +94,28 @@ const menuConfig = {
           ]
         },
         {
+          id: 'banners-promotions',
+          title: 'Banners & Promotions',
+          type: 'collapse',
+          icon: icons.ReceiptLongOutlinedIcon,
+          children: [
+            {
+              id: 'promotion-dashboard',
+              title: 'Promotion Dashboard',
+              type: 'item',
+              icon: icons.InsightsOutlinedIcon,
+              url: '/promotions'
+            },
+            {
+              id: 'banners-dashboard',
+              title: 'Banners Dashboard',
+              type: 'item',
+              icon: icons.InsightsOutlinedIcon,
+              url: '/banners'
+            }
+          ]
+        },
+        {
           id: 'coupons-management',
           title: 'Coupons Management',
           type: 'collapse',

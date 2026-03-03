@@ -6,24 +6,19 @@ import {
   DialogActions,
   Button,
   TextField,
+  MenuItem,
   Divider,
   Chip,
   Grid,
-  Autocomplete,
-  Box,
-  Typography,
-  Stack,
-  MenuItem
+  Autocomplete
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllCitiesWithAreasAdmin } from '../../redux/features/Locations/LocationSlice';
-import { createPromotion, updatePromotion } from '../../redux/features/Promotions/PromotionSlice';
+import { createPromotion } from '../../redux/features/Promotions/PromotionSlice';
 
-export default function PromotionModal({ open, onClose, onRefresh, promotion = null }) {
+export default function PromotionModal({ open, onClose, onRefresh }) {
   const dispatch = useDispatch();
-  const isEdit = Boolean(promotion?._id);
-
   const { allCitiesWithAreas = [] } = useSelector((state) => state.location);
 
   const { control, handleSubmit, watch, reset } = useForm({
@@ -31,96 +26,33 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
       title: '',
       shortDescription: '',
       imageUrl: '',
-      displayOrder: 0,
       status: 'DRAFT',
       startDate: '',
       endDate: '',
       targeting: {
         type: 'ALL',
-        geographic: {
-          cities: [],
-          areas: []
-        }
+        geographic: { cities: [], areas: [] }
       }
     }
   });
 
   const targetingType = watch('targeting.type');
   const selectedCities = watch('targeting.geographic.cities');
-  const imageUrl = watch('imageUrl');
 
   useEffect(() => {
-    if (open) {
-      dispatch(fetchAllCitiesWithAreasAdmin());
-    }
+    if (open) dispatch(fetchAllCitiesWithAreasAdmin());
   }, [open, dispatch]);
-
-  useEffect(() => {
-    if (promotion) {
-      reset({
-        title: promotion.title || '',
-        shortDescription: promotion.description || '',
-        imageUrl: promotion.imageUrl || '',
-        displayOrder: promotion.displayOrder ?? 0,
-        status: promotion.isActive ? 'ACTIVE' : 'DRAFT',
-        startDate: promotion.startDate?.split('T')[0] || '',
-        endDate: promotion.endDate?.split('T')[0] || '',
-        targeting: promotion.targeting || {
-          type: 'ALL',
-          geographic: { cities: [], areas: [] }
-        }
-      });
-    } else {
-      reset();
-    }
-  }, [promotion, reset]);
 
   const availableAreas = useMemo(() => {
     if (!selectedCities?.length) return [];
     return allCitiesWithAreas.filter((city) => selectedCities.includes(city._id)).flatMap((city) => city.areas || []);
   }, [selectedCities, allCitiesWithAreas]);
 
-  // const onSubmit = async (data) => {
-  //   const payload = {
-  //     ...data,
-  //     isActive: data.status === 'ACTIVE'
-  //   };
-
-  //   try {
-  //     if (isEdit) {
-  //       await dispatch(updatePromotion({ id: promotion._id, data: payload })).unwrap();
-  //     } else {
-  //       await dispatch(createPromotion(payload)).unwrap();
-  //     }
-
-  //     onRefresh?.();
-  //     onClose();
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // };
-
   const onSubmit = async (data) => {
-    const payload = {
-      ...data,
-      isActive: data.status === 'ACTIVE',
-      targeting: {
-        ...data.targeting,
-        geographic: {
-          ...data.targeting.geographic,
-          cities: data.targeting.geographic?.cities?.map((id) => String(id)) || [],
-          areas: data.targeting.geographic?.areas?.map((id) => String(id)) || []
-        }
-      }
-    };
-
     try {
-      if (isEdit) {
-        await dispatch(updatePromotion({ id: promotion._id, data: payload })).unwrap();
-      } else {
-        await dispatch(createPromotion(payload)).unwrap();
-      }
-
+      console.log('data', data);
+      await dispatch(createPromotion(data)).unwrap();
+      reset();
       onRefresh?.();
       onClose();
     } catch (error) {
@@ -130,18 +62,12 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
-      <DialogTitle sx={{ fontWeight: 800 }}>{isEdit ? 'Edit Promotion' : 'Create Promotion'}</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>Create Promotion</DialogTitle>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent dividers>
           <Grid container spacing={3}>
-            {/* Basic Info */}
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
-                Basic Information
-              </Typography>
-            </Grid>
-
+            {/* TITLE */}
             <Grid size={{ xs: 12, md: 8 }}>
               <Controller
                 name="title"
@@ -153,12 +79,13 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
               />
             </Grid>
 
+            {/* STATUS */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Controller
                 name="status"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Status" fullWidth>
+                  <TextField {...field} select label="Initial Status" fullWidth>
                     <MenuItem value="DRAFT">Draft</MenuItem>
                     <MenuItem value="ACTIVE">Active</MenuItem>
                   </TextField>
@@ -166,6 +93,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
               />
             </Grid>
 
+            {/* SHORT DESCRIPTION */}
             <Grid size={{ xs: 12 }}>
               <Controller
                 name="shortDescription"
@@ -174,46 +102,12 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
               />
             </Grid>
 
+            {/* IMAGE URL */}
             <Grid size={{ xs: 12 }}>
               <Controller name="imageUrl" control={control} render={({ field }) => <TextField {...field} label="Image URL" fullWidth />} />
             </Grid>
 
-            {imageUrl && (
-              <Grid size={{ xs: 12 }}>
-                <Box
-                  component="img"
-                  src={imageUrl}
-                  alt="preview"
-                  sx={{
-                    width: '100%',
-                    maxHeight: 220,
-                    objectFit: 'cover',
-                    borderRadius: 3,
-                    border: '1px solid #e2e8f0'
-                  }}
-                />
-              </Grid>
-            )}
-
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Controller
-                name="displayOrder"
-                control={control}
-                rules={{ required: 'Display order required' }}
-                render={({ field, fieldState }) => (
-                  <TextField
-                    {...field}
-                    type="number"
-                    label="Display Order"
-                    fullWidth
-                    error={!!fieldState.error}
-                    helperText={fieldState.error?.message || 'Lower number appears first'}
-                  />
-                )}
-              />
-            </Grid>
-
-            {/* Validity */}
+            {/* DATE RANGE */}
             <Grid size={{ xs: 12 }}>
               <Divider>
                 <Chip label="Validity Period" />
@@ -222,7 +116,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
             <Grid size={{ xs: 12, md: 6 }}>
               <Controller
-                name="validFrom"
+                name="startDate"
                 control={control}
                 render={({ field }) => <TextField {...field} type="date" label="Start Date" fullWidth InputLabelProps={{ shrink: true }} />}
               />
@@ -230,13 +124,13 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
 
             <Grid size={{ xs: 12, md: 6 }}>
               <Controller
-                name="validUntil"
+                name="endDate"
                 control={control}
                 render={({ field }) => <TextField {...field} type="date" label="End Date" fullWidth InputLabelProps={{ shrink: true }} />}
               />
             </Grid>
 
-            {/* Targeting */}
+            {/* TARGETING */}
             <Grid size={{ xs: 12 }}>
               <Divider>
                 <Chip label="Targeting" />
@@ -267,7 +161,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
                         multiple
                         options={allCitiesWithAreas}
                         getOptionLabel={(option) => option.city}
-                        value={allCitiesWithAreas.filter((c) => field.value?.includes(c._id))}
+                        value={allCitiesWithAreas.filter((c) => field.value.includes(c._id))}
                         onChange={(_, newValue) => field.onChange(newValue.map((v) => v._id))}
                         renderInput={(params) => <TextField {...params} label="Cities" />}
                       />
@@ -284,9 +178,9 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
                         multiple
                         options={availableAreas}
                         getOptionLabel={(option) => option.name}
-                        value={availableAreas.filter((a) => field.value?.includes(a._id))}
+                        value={availableAreas.filter((a) => field.value.includes(a._id))}
                         onChange={(_, newValue) => field.onChange(newValue.map((v) => v._id))}
-                        renderInput={(params) => <TextField {...params} label="Areas" />}
+                        renderInput={(params) => <TextField {...params} label="Areas" disabled={!selectedCities.length} />}
                       />
                     )}
                   />
@@ -299,7 +193,7 @@ export default function PromotionModal({ open, onClose, onRefresh, promotion = n
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="contained" size="large" sx={{ borderRadius: 3, px: 4 }}>
-            {isEdit ? 'Update Promotion' : 'Create Promotion'}
+            Create Promotion
           </Button>
         </DialogActions>
       </form>

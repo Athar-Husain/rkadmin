@@ -132,11 +132,12 @@ const promotionSlice = createSlice({
       // Admin
       // ----------------
       .addCase(createPromotion.fulfilled, (state, action) => {
-        state.promotions.push(action.payload.promotion);
+        // state.promotions.push(action.payload.promotion);
         toast.success('Promotion created successfully');
       })
       .addCase(fetchAllPromotions.fulfilled, (state, action) => {
-        state.promotions = action.payload.promotions;
+        console.log('fetchAllPromotions action payload', action.payload);
+        state.promotions = action.payload;
       })
       .addCase(getPromotionById.fulfilled, (state, action) => {
         state.promotion = action.payload.promotion;

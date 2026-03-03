@@ -210,52 +210,80 @@ export const purchaseAPI = {
   delete: (id) => api.delete(`${PURCHASES}/deletePurchase/${id}`)
 };
 
-const COUPONS = '/api/coupons';
-
 // const COUPONS = '/api/coupons';
 
+// // const COUPONS = '/api/coupons';
+
+// export const couponAPI = {
+//   // 🔹 Admin - Create
+//   create: (data) => api.post(`${COUPONS}/createCoupon`, data),
+//   // createV2: (data) => api.post(`${COUPONS}/createCoupon2`, data),
+
+//   // 🔹 Admin - Analytics
+//   getAnalytics: () => api.get(`${COUPONS}/analytics`),
+//   getAnalytics1: () => api.get(`${COUPONS}/analytics1`),
+//   getAnalytics2: () => api.get(`${COUPONS}/analytics2`),
+
+//   // 🔹 Admin - Get All Coupons
+//   getAll: () => api.get(`${COUPONS}/getAllCoupons`),
+
+//   // 🔹 User - My Coupons
+//   dynamicOptions: () => api.get(`${COUPONS}/dynamicOptions`),
+//   getMy: () => api.get(`${COUPONS}/getmycoupons`),
+//   getMyActive: () => api.get(`${COUPONS}/getmyactivecoupons`),
+//   getHistory: () => api.get(`${COUPONS}/getMyCouponHistory`),
+//   getSavings: () => api.get(`${COUPONS}/getMyCouponSavings`),
+//   getDiscoverable: () => api.get(`${COUPONS}/getDiscoverableCoupons`),
+
+//   // 🔹 Get By ID
+//   getById: (id) => api.get(`${COUPONS}/getCouponById/${id}`),
+
+//   // 🔹 Update (Admin)
+//   update: (id, data) => api.put(`${COUPONS}/updateCoupon/${id}`, data),
+
+//   // 🔹 Claim
+//   claim: (id) => api.post(`${COUPONS}/claimCoupon/${id}/claim`),
+
+//   // 🔹 Validation
+//   validate: (data) => api.post(`${COUPONS}/validate`, data),
+
+//   validateForStaff: (data) => api.post(`${COUPONS}/validateForStaff`, data),
+
+//   // 🔹 Redeem
+//   redeem: (data) => api.post(`${COUPONS}/redeem`, data),
+
+//   // 🔹 Redemption History (Admin)
+//   getRedemptions: (id) => api.get(`${COUPONS}/getRedemptionHistory/${id}/redemptions`)
+// };
+
+const COUPONS = '/api/coupons';
+
 export const couponAPI = {
-  // 🔹 Admin - Create
+  // --- Admin Routes (adminProtect) ---
   create: (data) => api.post(`${COUPONS}/createCoupon`, data),
-  // createV2: (data) => api.post(`${COUPONS}/createCoupon2`, data),
-
-  // 🔹 Admin - Analytics
   getAnalytics: () => api.get(`${COUPONS}/analytics`),
-  getAnalytics1: () => api.get(`${COUPONS}/analytics1`),
-  getAnalytics2: () => api.get(`${COUPONS}/analytics2`),
-
-  // 🔹 Admin - Get All Coupons
-  getAll: () => api.get(`${COUPONS}/getAllCoupons`),
-
-  // 🔹 User - My Coupons
-  dynamicOptions: () => api.get(`${COUPONS}/dynamicOptions`),
-  getMy: () => api.get(`${COUPONS}/getmycoupons`),
-  getMyActive: () => api.get(`${COUPONS}/getmyactivecoupons`),
-  getHistory: () => api.get(`${COUPONS}/getMyCouponHistory`),
-  getSavings: () => api.get(`${COUPONS}/getMyCouponSavings`),
-  getDiscoverable: () => api.get(`${COUPONS}/getDiscoverableCoupons`),
-
-  // 🔹 Get By ID
-  getById: (id) => api.get(`${COUPONS}/getCouponById/${id}`),
-
-  // 🔹 Update (Admin)
   update: (id, data) => api.put(`${COUPONS}/updateCoupon/${id}`, data),
+  getAll: () => api.get(`${COUPONS}/getAllCoupons`),
+  getRedemptions: (id) => api.get(`${COUPONS}/getRedemptionHistory/${id}/redemptions`),
 
-  // 🔹 Claim
+  // --- Public / Shared Routes ---
+  // Note: route is lowercase in your express file: router.get('/dynamicoptions'...)
+  dynamicOptions: () => api.get(`${COUPONS}/dynamicoptions`),
+
+  // --- User Routes (protect) ---
+  getMy: () => api.get(`${COUPONS}/getmycoupons`),
+  getSavings: () => api.get(`${COUPONS}/getMyCouponSavings`),
+  getHistory: () => api.get(`${COUPONS}/getMyCouponHistory`),
+  getDiscoverable: () => api.get(`${COUPONS}/getDiscoverableCoupons`),
+  getActive: () => api.get(`${COUPONS}/getmyactivecoupons`),
+  getById: (id) => api.get(`${COUPONS}/getCouponById/${id}`),
   claim: (id) => api.post(`${COUPONS}/claimCoupon/${id}/claim`),
 
-  // 🔹 Validation
+  // --- Staff / Mixed Routes (adminStaffProtect / staffProtect) ---
   validate: (data) => api.post(`${COUPONS}/validate`, data),
-
   validateForStaff: (data) => api.post(`${COUPONS}/validateForStaff`, data),
-
-  // 🔹 Redeem
-  redeem: (data) => api.post(`${COUPONS}/redeem`, data),
-
-  // 🔹 Redemption History (Admin)
-  getRedemptions: (id) => api.get(`${COUPONS}/getRedemptionHistory/${id}/redemptions`)
+  redeem: (data) => api.post(`${COUPONS}/redeem`, data)
 };
-
 const STAFF = '/api/staff';
 
 export const staffAPI = {
@@ -371,11 +399,11 @@ export const promotionAPI = {
   // ----------------
   // Admin
   // ----------------
-  create: (data) => api.post(`${PROMOTION}`, data).then((res) => res.data),
-  getAll: (params) => api.get(`${PROMOTION}`, { params }).then((res) => res.data),
-  getById: (id) => api.get(`${PROMOTION}/${id}`).then((res) => res.data),
-  update: (id, data) => api.put(`${PROMOTION}/${id}`, data).then((res) => res.data),
-  delete: (id) => api.delete(`${PROMOTION}/${id}`).then((res) => res.data),
+  create: (data) => api.post(`${PROMOTION}/createPromotion`, data).then((res) => res.data),
+  getAll: (params) => api.get(`${PROMOTION}/getAllPromotions`, { params }).then((res) => res.data),
+  getById: (id) => api.get(`${PROMOTION}/getPromotionById/${id}`).then((res) => res.data),
+  update: (id, data) => api.put(`${PROMOTION}/updatePromotion/${id}`, data).then((res) => res.data),
+  delete: (id) => api.delete(`${PROMOTION}/deletePromotion/${id}`).then((res) => res.data),
 
   // ----------------
   // User / Public

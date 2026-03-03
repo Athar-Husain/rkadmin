@@ -1,19 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { Chip, IconButton, Tooltip, Box, CircularProgress, Typography, alpha, LinearProgress, useTheme } from '@mui/material';
 import { EditOutlined, HistoryOutlined, ConfirmationNumberOutlined as CouponIcon } from '@mui/icons-material';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllCouponsAdmin } from '../../redux/features/Coupons/CouponSlice';
 
-const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) => {
+const CouponList = ({ onEdit, onViewHistory }) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const { coupons = [], isCouponLoading } = useSelector((state) => state.coupon);
 
-  // We use the same strict logic for the badge display
-  const getCalculatedStatus = (coupon) => {
-    if (!coupon) return 'EXPIRED';
-    const now = new Date();
-    const expiryDate = new Date(coupon.validUntil);
-    const isActive = coupon.status === 'ACTIVE' && !coupon.isExpired && now < expiryDate;
-    return isActive ? 'ACTIVE' : 'EXPIRED';
-  };
+  useEffect(() => {
+    dispatch(fetchAllCouponsAdmin());
+  }, [dispatch]);
+
+  const safeRows = Array.isArray(coupons) ? coupons.filter(Boolean) : [];
 
   const columns = [
     {
@@ -45,17 +46,16 @@ const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) =>
       headerName: 'Status',
       width: 120,
       renderCell: (params) => {
-        const calculatedStatus = getCalculatedStatus(params.row);
-        const isActive = calculatedStatus === 'ACTIVE';
+        const isActive = params.value === 'ACTIVE';
         return (
           <Chip
-            label={calculatedStatus}
+            label={params.value}
             size="small"
             sx={{
               fontWeight: 700,
               fontSize: '0.65rem',
-              bgcolor: isActive ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
-              color: isActive ? '#059669' : '#EF4444',
+              bgcolor: isActive ? alpha('#10B981', 0.1) : alpha('#64748B', 0.1),
+              color: isActive ? '#059669' : '#475569',
               borderRadius: '6px',
               border: 'none'
             }}
@@ -75,7 +75,7 @@ const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) =>
 
         return (
           <Box sx={{ width: '100%', pr: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.8 }}>
               <Typography variant="caption" sx={{ fontWeight: 800, color: isCritical ? 'error.main' : 'text.primary' }}>
                 {current}{' '}
                 <Typography variant="caption" color="text.disabled">
@@ -85,7 +85,7 @@ const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) =>
               <Typography variant="caption" fontWeight={800} color="text.secondary">
                 {Math.round(progress)}%
               </Typography>
-            </Box>
+            </Stack>
             <LinearProgress
               variant="determinate"
               value={progress}
@@ -95,7 +95,9 @@ const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) =>
                 bgcolor: '#E2E8F0',
                 '& .MuiLinearProgress-bar': {
                   borderRadius: 4,
-                  bgcolor: isCritical ? '#EF4444' : '#6366F1'
+                  bgcolor: isCritical ? '#EF4444' : '#6366F1',
+                  backgroundImage:
+                    'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)'
                 }
               }}
             />
@@ -136,7 +138,7 @@ const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) =>
     }
   ];
 
-  if (isCouponLoading && coupons.length === 0) {
+  if (isCouponLoading) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, gap: 2 }}>
         <CircularProgress size={40} thickness={4} />
@@ -159,7 +161,7 @@ const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) =>
       }}
     >
       <DataGrid
-        rows={coupons}
+        rows={safeRows}
         columns={columns}
         getRowId={(row) => row._id}
         pageSizeOptions={[10, 25]}
@@ -179,11 +181,22 @@ const CouponList = ({ coupons = [], isCouponLoading, onEdit, onViewHistory }) =>
             borderBottom: '1px solid #F1F5F9',
             display: 'flex',
             alignItems: 'center'
+          },
+          '& .MuiDataGrid-row:hover': {
+            bgcolor: alpha('#6366F1', 0.02)
+          },
+          '& .MuiDataGrid-footerContainer': {
+            borderTop: '1px solid #E2E8F0'
           }
         }}
       />
     </Box>
   );
 };
+
+// Simple Stack component if not imported from MUI
+const Stack = ({ children, direction = 'row', justifyContent, sx }) => (
+  <Box sx={{ display: 'flex', flexDirection: direction, justifyContent, ...sx }}>{children}</Box>
+);
 
 export default CouponList;
