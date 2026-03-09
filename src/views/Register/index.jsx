@@ -4,7 +4,8 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 
 // Redux action
-import { AdminRegister } from '../../redux/features/Admin/adminSlice';
+import { registerAdmin } from '../../redux/features/Admin/adminSlice';
+// import { AdminRegister } from '../../redux/features/Admin/adminSlice';
 
 // Material UI
 import {
@@ -52,13 +53,12 @@ const Register = () => {
     }
 
     try {
-      await dispatch(AdminRegister(data)).unwrap();
+      await dispatch(registerAdmin(data)).unwrap();
       navigate('/login'); // <-- Redirect after success
     } catch (err) {
       console.error('Registration error:', err);
     }
   };
-
 
   return (
     <Grid
@@ -84,7 +84,7 @@ const Register = () => {
             <Grid container direction="column" spacing={4} justifyContent="center">
               <Grid size={{ xs: 12 }}>
                 <Grid container justifyContent="space-between" alignItems="center">
-                  <Grid >
+                  <Grid>
                     <Typography color="textPrimary" gutterBottom variant="h2">
                       Register
                     </Typography>
@@ -92,7 +92,7 @@ const Register = () => {
                       To keep connected with us.
                     </Typography>
                   </Grid>
-                  <Grid >
+                  <Grid>
                     <RouterLink to="/">
                       <img alt="logo" src={Logo} height={40} />
                     </RouterLink>
@@ -150,10 +150,7 @@ const Register = () => {
                       })}
                       endAdornment={
                         <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword((show) => !show)}
-                            edge="end"
-                          >
+                          <IconButton onClick={() => setShowPassword((show) => !show)} edge="end">
                             {showPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
                         </InputAdornment>
@@ -167,15 +164,8 @@ const Register = () => {
                     )}
                   </FormControl>
 
-
                   <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={agree}
-                        onChange={(e) => setAgree(e.target.checked)}
-                        color="primary"
-                      />
-                    }
+                    control={<Checkbox checked={agree} onChange={(e) => setAgree(e.target.checked)} color="primary" />}
                     label={
                       <Typography variant="body2">
                         I agree to the&nbsp;
@@ -185,22 +175,14 @@ const Register = () => {
                     sx={{ mt: 2 }}
                   />
 
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    disabled={isSubmitting}
-                    sx={{ mt: 3 }}
-                  >
+                  <Button type="submit" fullWidth variant="contained" color="primary" size="large" disabled={isSubmitting} sx={{ mt: 3 }}>
                     Register
                   </Button>
                 </form>
               </Grid>
 
               <Grid container justifyContent="flex-start" sx={{ mt: theme.spacing(2), mb: theme.spacing(1) }}>
-                <Grid >
+                <Grid>
                   <Typography
                     variant="subtitle2"
                     color="secondary"
